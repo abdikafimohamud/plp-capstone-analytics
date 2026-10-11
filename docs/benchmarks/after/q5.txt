@@ -1,0 +1,59 @@
+-- Q5  JSONB campaign attribution by acquisition channel
+-- file: queries/q5_campaign.sql   tenant_id=1   median of 5 runs: 415.956 ms
+
+GroupAggregate  (cost=64690.09..64864.61 rows=5370 width=36) (actual time=381.515..415.793 rows=244 loops=1)
+  Group Key: (((e.occurred_at AT TIME ZONE 'UTC'::text))::date), u.acquisition_channel
+  Buffers: shared hit=356 read=20781 written=1
+  ->  Sort  (cost=64690.09..64703.51 rows=5370 width=67) (actual time=381.453..391.228 rows=21507 loops=1)
+        Sort Key: (((e.occurred_at AT TIME ZONE 'UTC'::text))::date), u.acquisition_channel, e.user_id
+        Sort Method: quicksort  Memory: 3336kB
+        Buffers: shared hit=356 read=20781 written=1
+        ->  Hash Join  (cost=2656.68..64357.40 rows=5370 width=67) (actual time=34.136..350.527 rows=21507 loops=1)
+              Hash Cond: (e.user_id = u.user_id)
+              Buffers: shared hit=356 read=20781 written=1
+              ->  Append  (cost=0.00..61617.17 rows=21599 width=67) (actual time=18.152..315.598 rows=21507 loops=1)
+                    Buffers: shared hit=355 read=20320 written=1
+                    Subplans Removed: 6
+                    ->  Bitmap Heap Scan on events_2026_08 e_1  (cost=772.92..16486.05 rows=5320 width=67) (actual time=18.151..173.271 rows=5595 loops=1)
+                          Recheck Cond: ((occurred_at >= (now() - '60 days'::interval)) AND (occurred_at < now()) AND (tenant_id = 1) AND (properties @> '{"campaign": "autumn_sale"}'::jsonb))
+                          Rows Removed by Index Recheck: 310160
+                          Heap Blocks: lossy=5178
+                          Buffers: shared hit=124 read=5301
+                          ->  BitmapAnd  (cost=772.92..772.92 rows=5321 width=0) (actual time=18.001..18.002 rows=0 loops=1)
+                                Buffers: shared hit=123 read=124
+                                ->  Bitmap Index Scan on events_2026_08_occurred_at_idx  (cost=0.00..42.19 rows=2240104 width=0) (actual time=1.397..1.397 rows=367520 loops=1)
+                                      Index Cond: ((occurred_at >= (now() - '60 days'::interval)) AND (occurred_at < now()))
+                                      Buffers: shared hit=5 read=5
+                                ->  Bitmap Index Scan on events_2026_08_tenant_id_properties_idx  (cost=0.00..727.81 rows=7676 width=0) (actual time=15.316..15.316 rows=8101 loops=1)
+                                      Index Cond: ((tenant_id = 1) AND (properties @> '{"campaign": "autumn_sale"}'::jsonb))
+                                      Buffers: shared hit=118 read=119
+                    ->  Bitmap Heap Scan on events_2026_09 e_2  (cost=1013.12..31598.30 rows=11366 width=67) (actual time=26.515..101.764 rows=11253 loops=1)
+                          Recheck Cond: ((tenant_id = 1) AND (properties @> '{"campaign": "autumn_sale"}'::jsonb))
+                          Filter: ((occurred_at < now()) AND (occurred_at >= (now() - '60 days'::interval)))
+                          Heap Blocks: exact=10455
+                          Buffers: shared hit=164 read=10621 written=1
+                          ->  Bitmap Index Scan on events_2026_09_tenant_id_properties_idx  (cost=0.00..1010.28 rows=11368 width=0) (actual time=23.260..23.260 rows=11253 loops=1)
+                                Index Cond: ((tenant_id = 1) AND (properties @> '{"campaign": "autumn_sale"}'::jsonb))
+                                Buffers: shared hit=164 read=166
+                    ->  Bitmap Heap Scan on events_2026_10 e_3  (cost=426.45..13416.36 rows=4907 width=67) (actual time=7.775..37.779 rows=4659 loops=1)
+                          Recheck Cond: ((tenant_id = 1) AND (properties @> '{"campaign": "autumn_sale"}'::jsonb))
+                          Filter: ((occurred_at < now()) AND (occurred_at >= (now() - '60 days'::interval)))
+                          Heap Blocks: exact=4329
+                          Buffers: shared hit=67 read=4398
+                          ->  Bitmap Index Scan on events_2026_10_tenant_id_properties_idx  (cost=0.00..425.22 rows=4908 width=0) (actual time=7.092..7.092 rows=4659 loops=1)
+                                Index Cond: ((tenant_id = 1) AND (properties @> '{"campaign": "autumn_sale"}'::jsonb))
+                                Buffers: shared hit=67 read=69
+              ->  Hash  (cost=2345.89..2345.89 rows=24863 width=20) (actual time=15.948..15.951 rows=25000 loops=1)
+                    Buckets: 32768  Batches: 1  Memory Usage: 1624kB
+                    Buffers: shared hit=1 read=461
+                    ->  Bitmap Heap Scan on end_users u  (cost=581.11..2345.89 rows=24863 width=20) (actual time=1.510..9.114 rows=25000 loops=1)
+                          Recheck Cond: (tenant_id = 1)
+                          Heap Blocks: exact=364
+                          Buffers: shared hit=1 read=461
+                          ->  Bitmap Index Scan on end_users_pkey  (cost=0.00..574.89 rows=24863 width=0) (actual time=1.450..1.451 rows=25000 loops=1)
+                                Index Cond: (tenant_id = 1)
+                                Buffers: shared read=98
+Planning:
+  Buffers: shared hit=3 read=30
+Planning Time: 1.184 ms
+Execution Time: 415.956 ms

@@ -1,0 +1,30 @@
+-- Q4  Revenue by signup cohort and plan (last 90 days)
+-- file: queries/q4_revenue_mv.sql   tenant_id=1   median of 5 runs: 1.054 ms
+
+Sort  (cost=77.23..77.27 rows=16 width=138) (actual time=1.019..1.024 rows=12 loops=1)
+  Sort Key: m.cohort_month, pl.name
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=39
+  ->  HashAggregate  (cost=76.43..76.91 rows=16 width=138) (actual time=0.976..0.999 rows=12 loops=1)
+        Group Key: m.cohort_month, pl.name
+        Batches: 1  Memory Usage: 32kB
+        Buffers: shared hit=39
+        ->  Hash Join  (cost=18.55..68.87 rows=504 width=35) (actual time=0.122..0.584 rows=504 loops=1)
+              Hash Cond: (m.plan_id = pl.plan_id)
+              Buffers: shared hit=39
+              ->  Bitmap Heap Scan on mv_daily_revenue m  (cost=17.46..65.06 rows=504 width=31) (actual time=0.095..0.297 rows=504 loops=1)
+                    Recheck Cond: ((tenant_id = 1) AND (day >= (((now() AT TIME ZONE 'UTC'::text))::date - 90)))
+                    Heap Blocks: exact=35
+                    Buffers: shared hit=38
+                    ->  Bitmap Index Scan on mv_daily_revenue_pk  (cost=0.00..17.33 rows=504 width=0) (actual time=0.076..0.077 rows=504 loops=1)
+                          Index Cond: ((tenant_id = 1) AND (day >= (((now() AT TIME ZONE 'UTC'::text))::date - 90)))
+                          Buffers: shared hit=3
+              ->  Hash  (cost=1.04..1.04 rows=4 width=8) (actual time=0.016..0.017 rows=4 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on plans pl  (cost=0.00..1.04 rows=4 width=8) (actual time=0.008..0.010 rows=4 loops=1)
+                          Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=4
+Planning Time: 0.413 ms
+Execution Time: 1.111 ms

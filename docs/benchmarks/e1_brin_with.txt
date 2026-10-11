@@ -1,0 +1,22 @@
+GroupAggregate  (cost=54022.05..54375.34 rows=8 width=18) (actual time=26.637..35.170 rows=8 loops=1)
+  Group Key: events.event_type_id
+  Buffers: shared hit=630
+  ->  Sort  (cost=54022.05..54110.35 rows=35321 width=6) (actual time=26.559..29.586 rows=37249 loops=1)
+        Sort Key: events.event_type_id, events.tenant_id
+        Sort Method: quicksort  Memory: 2701kB
+        Buffers: shared hit=630
+        ->  Append  (cost=0.00..51353.86 rows=35321 width=6) (actual time=0.779..13.122 rows=37249 loops=1)
+              Buffers: shared hit=630
+              Subplans Removed: 8
+              ->  Bitmap Heap Scan on events_2026_10 events_1  (cost=32.99..32446.39 rows=35313 width=6) (actual time=0.778..9.702 rows=37249 loops=1)
+                    Recheck Cond: ((occurred_at >= (now() - '06:00:00'::interval)) AND (occurred_at < now()))
+                    Rows Removed by Index Recheck: 819
+                    Heap Blocks: lossy=625
+                    Buffers: shared hit=630
+                    ->  Bitmap Index Scan on events_2026_10_occurred_at_idx  (cost=0.00..24.16 rows=37066 width=0) (actual time=0.439..0.439 rows=6250 loops=1)
+                          Index Cond: ((occurred_at >= (now() - '06:00:00'::interval)) AND (occurred_at < now()))
+                          Buffers: shared hit=5
+Planning:
+  Buffers: shared hit=24
+Planning Time: 1.000 ms
+Execution Time: 35.644 ms

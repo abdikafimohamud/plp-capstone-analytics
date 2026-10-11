@@ -1,0 +1,48 @@
+-- Q5  JSONB campaign attribution by acquisition channel
+-- file: queries/q5_campaign.sql   tenant_id=1   median of 5 runs: 1781.205 ms
+
+GroupAggregate  (cost=265929.88..266683.28 rows=5233 width=36) (actual time=1769.840..1801.800 rows=244 loops=1)
+  Group Key: (((e.occurred_at AT TIME ZONE 'UTC'::text))::date), u.acquisition_channel
+  Buffers: shared hit=48 read=147237
+  ->  Gather Merge  (cost=265929.88..266526.29 rows=5233 width=67) (actual time=1769.798..1791.309 rows=21508 loops=1)
+        Workers Planned: 1
+        Workers Launched: 1
+        Buffers: shared hit=48 read=147237
+        ->  Sort  (cost=264929.87..264937.57 rows=3078 width=67) (actual time=1765.268..1766.849 rows=10754 loops=2)
+              Sort Key: (((e.occurred_at AT TIME ZONE 'UTC'::text))::date), u.acquisition_channel, e.user_id
+              Sort Method: quicksort  Memory: 1772kB
+              Buffers: shared hit=48 read=147237
+              Worker 0:  Sort Method: quicksort  Memory: 1686kB
+              ->  Parallel Hash Join  (cost=262479.18..264751.54 rows=3078 width=67) (actual time=1726.774..1749.467 rows=10754 loops=2)
+                    Hash Cond: (u.user_id = e.user_id)
+                    Buffers: shared hit=27 read=147231
+                    ->  Parallel Seq Scan on end_users u  (cost=0.00..2189.29 rows=14625 width=20) (actual time=0.123..10.532 rows=12500 loops=2)
+                          Filter: (tenant_id = 1)
+                          Rows Removed by Filter: 37500
+                          Buffers: shared read=1454
+                    ->  Parallel Hash  (cost=262369.53..262369.53 rows=8772 width=67) (actual time=1726.071..1726.074 rows=10754 loops=2)
+                          Buckets: 32768  Batches: 1  Memory Usage: 3008kB
+                          Buffers: shared read=145773
+                          ->  Parallel Append  (cost=0.00..262369.53 rows=8772 width=67) (actual time=60.962..1714.384 rows=10754 loops=2)
+                                Buffers: shared read=145773
+                                Subplans Removed: 6
+                                ->  Parallel Bitmap Heap Scan on events_2026_08 e_1  (cost=26245.73..85532.00 rows=2256 width=67) (actual time=121.415..620.746 rows=5596 loops=1)
+                                      Recheck Cond: ((tenant_id = 1) AND (occurred_at >= (now() - '60 days'::interval)) AND (occurred_at < now()))
+                                      Filter: (properties @> '{"campaign": "autumn_sale"}'::jsonb)
+                                      Rows Removed by Filter: 555788
+                                      Buffers: shared read=41715
+                                      ->  Bitmap Index Scan on events_2026_08_pkey  (cost=0.00..26244.38 rows=550715 width=0) (actual time=112.498..112.498 rows=561384 loops=1)
+                                            Index Cond: ((tenant_id = 1) AND (occurred_at >= (now() - '60 days'::interval)) AND (occurred_at < now()))
+                                            Buffers: shared read=4971
+                                ->  Parallel Seq Scan on events_2026_09 e_2  (cost=0.00..125816.64 rows=4506 width=67) (actual time=0.155..1029.572 rows=5626 loops=2)
+                                      Filter: ((properties @> '{"campaign": "autumn_sale"}'::jsonb) AND (tenant_id = 1) AND (occurred_at < now()) AND (occurred_at >= (now() - '60 days'::interval)))
+                                      Rows Removed by Filter: 2252966
+                                      Buffers: shared read=74057
+                                ->  Parallel Seq Scan on events_2026_10 e_3  (cost=0.00..50968.59 rows=2004 width=67) (actual time=0.507..743.582 rows=4659 loops=1)
+                                      Filter: ((properties @> '{"campaign": "autumn_sale"}'::jsonb) AND (tenant_id = 1) AND (occurred_at < now()) AND (occurred_at >= (now() - '60 days'::interval)))
+                                      Rows Removed by Filter: 1825240
+                                      Buffers: shared read=30001
+Planning:
+  Buffers: shared read=14
+Planning Time: 0.867 ms
+Execution Time: 1801.915 ms

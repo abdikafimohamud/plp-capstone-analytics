@@ -1,0 +1,56 @@
+Aggregate  (cost=3728.00..3728.07 rows=1 width=160) (actual time=42.247..42.256 rows=1 loops=1)
+  Buffers: shared hit=424
+  CTE f
+    ->  Result  (cost=0.01..1.17 rows=1 width=20) (actual time=0.011..0.013 rows=1 loops=1)
+          One-Time Filter: ((NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::integer = 1)
+          Buffers: shared hit=1
+          ->  Seq Scan on funnels  (cost=0.01..1.16 rows=1 width=8) (actual time=0.008..0.009 rows=1 loops=1)
+                Filter: ((tenant_id = 1) AND ((name)::text = 'Signup to Purchase'::text))
+                Rows Removed by Filter: 9
+                Buffers: shared hit=1
+  ->  Nested Loop  (cost=2764.62..3104.24 rows=11320 width=48) (actual time=29.949..36.436 rows=11368 loops=1)
+        Buffers: shared hit=424
+        ->  CTE Scan on f  (cost=0.00..0.02 rows=1 width=16) (actual time=0.012..0.016 rows=1 loops=1)
+              Buffers: shared hit=1
+        ->  HashAggregate  (cost=2764.62..2877.82 rows=11320 width=40) (actual time=29.934..34.219 rows=11368 loops=1)
+              Group Key: e.user_id
+              Batches: 1  Memory Usage: 1681kB
+              Buffers: shared hit=423
+              ->  Result  (cost=15.82..2509.92 rows=11320 width=18) (actual time=0.157..20.969 rows=20991 loops=1)
+                    One-Time Filter: ((NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::integer = 1)
+                    Buffers: shared hit=423
+                    ->  Merge Join  (cost=15.82..2509.92 rows=11320 width=18) (actual time=0.156..18.158 rows=20991 loops=1)
+                          Merge Cond: (e.event_type_id = fs.event_type_id)
+                          Buffers: shared hit=423
+                          ->  Merge Append  (cost=2.55..120413.54 rows=1202094 width=18) (actual time=0.128..10.484 rows=20992 loops=1)
+                                Sort Key: e.event_type_id
+                                Buffers: shared hit=420
+                                Subplans Removed: 7
+                                ->  Index Only Scan using events_2026_09_tenant_id_event_type_id_occurred_at_user_id_idx on events_2026_09 e_1  (cost=0.44..44017.81 rows=753303 width=18) (actual time=0.110..6.134 rows=13133 loops=1)
+                                      Index Cond: ((tenant_id = 1) AND (occurred_at >= (now() - '30 days'::interval)) AND (occurred_at < now()))
+                                      Heap Fetches: 0
+                                      Buffers: shared hit=378
+                                ->  Index Only Scan using events_2026_10_tenant_id_event_type_id_occurred_at_user_id_idx on events_2026_10 e_2  (cost=0.43..18991.20 rows=448784 width=18) (actual time=0.016..1.762 rows=7860 loops=1)
+                                      Index Cond: ((tenant_id = 1) AND (occurred_at >= (now() - '30 days'::interval)) AND (occurred_at < now()))
+                                      Heap Fetches: 0
+                                      Buffers: shared hit=42
+                          ->  Sort  (cost=13.26..13.27 rows=2 width=4) (actual time=0.026..1.526 rows=19887 loops=1)
+                                Sort Key: fs.event_type_id
+                                Sort Method: quicksort  Memory: 25kB
+                                Buffers: shared hit=3
+                                ->  Nested Loop  (cost=0.14..13.25 rows=2 width=4) (actual time=0.017..0.023 rows=4 loops=1)
+                                      Buffers: shared hit=3
+                                      ->  CTE Scan on f f_1  (cost=0.00..0.02 rows=1 width=4) (actual time=0.000..0.002 rows=1 loops=1)
+                                      ->  Index Scan using funnel_steps_pkey on funnel_steps fs  (cost=0.14..13.21 rows=2 width=8) (actual time=0.015..0.018 rows=4 loops=1)
+                                            Index Cond: (funnel_id = f_1.funnel_id)
+                                            Filter: (hashed SubPlan 3)
+                                            Buffers: shared hit=3
+                                            SubPlan 3
+                                              ->  Seq Scan on funnels f_2  (cost=0.00..1.23 rows=1 width=4) (actual time=0.004..0.007 rows=1 loops=1)
+                                                    Filter: (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::integer)
+                                                    Rows Removed by Filter: 9
+                                                    Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=33
+Planning Time: 1.498 ms
+Execution Time: 42.560 ms

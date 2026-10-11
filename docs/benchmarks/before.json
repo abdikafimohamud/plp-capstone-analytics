@@ -1,0 +1,2477 @@
+{
+  "phase": "before",
+  "tenant": 1,
+  "runs": 5,
+  "postgres": "PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu",
+  "shared_buffers": "128MB",
+  "work_mem": "4MB",
+  "total_events": 10338607,
+  "total_users": 100000,
+  "queries": {
+    "q1": {
+      "median_ms": 1107.617,
+      "min_ms": 977.714,
+      "max_ms": 1214.313,
+      "runs_ms": [
+        1138.245,
+        1051.03,
+        1107.617,
+        977.714,
+        1214.313
+      ],
+      "planning_ms": 1.543,
+      "plan": [
+        "Aggregate  (cost=202676.63..202676.70 rows=1 width=160) (actual time=1213.359..1213.806 rows=1 loops=1)",
+        "  Buffers: shared hit=85 read=80114",
+        "  CTE f",
+        "    ->  Seq Scan on funnels  (cost=0.00..1.15 rows=1 width=20) (actual time=0.018..0.021 rows=1 loops=1)",
+        "          Filter: ((tenant_id = 1) AND ((name)::text = 'Signup to Purchase'::text))",
+        "          Rows Removed by Filter: 9",
+        "          Buffers: shared read=1",
+        "  ->  Nested Loop  (cost=200267.78..201471.64 rows=21888 width=48) (actual time=1196.716..1210.115 rows=11371 loops=1)",
+        "        Buffers: shared hit=85 read=80114",
+        "        ->  CTE Scan on f  (cost=0.00..0.02 rows=1 width=16) (actual time=0.020..0.022 rows=1 loops=1)",
+        "              Buffers: shared read=1",
+        "        ->  GroupAggregate  (cost=200267.78..201033.86 rows=21888 width=40) (actual time=1196.691..1208.496 rows=11371 loops=1)",
+        "              Group Key: e.user_id",
+        "              Buffers: shared hit=85 read=80113",
+        "              ->  Sort  (cost=200267.78..200322.50 rows=21888 width=18) (actual time=1196.674..1199.643 rows=20995 loops=1)",
+        "                    Sort Key: e.user_id",
+        "                    Sort Method: quicksort  Memory: 1753kB",
+        "                    Buffers: shared hit=85 read=80113",
+        "                    ->  Hash Join  (cost=1001.93..198689.89 rows=21888 width=18) (actual time=0.880..1180.051 rows=20995 loops=1)",
+        "                          Hash Cond: (fs.funnel_id = f_1.funnel_id)",
+        "                          Buffers: shared hit=85 read=80113",
+        "                          ->  Gather  (cost=1001.90..197650.17 rows=218880 width=22) (actual time=0.854..1122.486 rows=209950 loops=1)",
+        "                                Workers Planned: 2",
+        "                                Workers Launched: 2",
+        "                                Buffers: shared hit=85 read=80113",
+        "                                ->  Hash Join  (cost=1.90..174762.17 rows=91200 width=22) (actual time=1.572..1125.995 rows=69983 loops=3)",
+        "                                      Hash Cond: (e.event_type_id = fs.event_type_id)",
+        "                                      Buffers: shared hit=85 read=80113",
+        "                                      ->  Parallel Append  (cost=0.00..166262.24 rows=505735 width=18) (actual time=1.327..1041.353 rows=402443 loops=3)",
+        "                                            Buffers: shared hit=47 read=80106",
+        "                                            Subplans Removed: 7",
+        "                                            ->  Parallel Bitmap Heap Scan on events_2026_09 e_1  (cost=243.21..114654.23 rows=316066 width=18) (actual time=1.376..773.699 rows=251019 loops=3)",
+        "                                                  Recheck Cond: ((occurred_at >= (now() - '30 days'::interval)) AND (occurred_at < now()))",
+        "                                                  Rows Removed by Index Recheck: 83",
+        "                                                  Filter: (tenant_id = 1)",
+        "                                                  Rows Removed by Filter: 767301",
+        "                                                  Heap Blocks: lossy=13459",
+        "                                                  Buffers: shared hit=47 read=50105",
+        "                                                  ->  Bitmap Index Scan on events_2026_09_occurred_at_idx  (cost=0.00..53.57 rows=3063504 width=0) (actual time=3.690..3.690 rows=500890 loops=1)",
+        "                                                        Index Cond: ((occurred_at >= (now() - '30 days'::interval)) AND (occurred_at < now()))",
+        "                                                        Buffers: shared hit=47 read=16",
+        "                                            ->  Parallel Seq Scan on events_2026_10 e_2  (cost=0.00..49062.45 rows=189662 width=18) (actual time=0.040..308.917 rows=227136 loops=2)",
+        "                                                  Filter: ((tenant_id = 1) AND (occurred_at < now()) AND (occurred_at >= (now() - '30 days'::interval)))",
+        "                                                  Rows Removed by Filter: 687814",
+        "                                                  Buffers: shared read=30001",
+        "                                      ->  Hash  (cost=1.40..1.40 rows=40 width=8) (actual time=0.064..0.065 rows=40 loops=3)",
+        "                                            Buckets: 1024  Batches: 1  Memory Usage: 10kB",
+        "                                            Buffers: shared hit=2 read=1",
+        "                                            ->  Seq Scan on funnel_steps fs  (cost=0.00..1.40 rows=40 width=8) (actual time=0.026..0.038 rows=40 loops=3)",
+        "                                                  Buffers: shared hit=2 read=1",
+        "                          ->  Hash  (cost=0.02..0.02 rows=1 width=4) (actual time=0.005..0.007 rows=1 loops=1)",
+        "                                Buckets: 1024  Batches: 1  Memory Usage: 9kB",
+        "                                ->  CTE Scan on f f_1  (cost=0.00..0.02 rows=1 width=4) (actual time=0.001..0.004 rows=1 loops=1)",
+        "Planning:",
+        "  Buffers: shared hit=1 read=13",
+        "Planning Time: 1.543 ms",
+        "Execution Time: 1214.313 ms"
+      ],
+      "file": "q1_funnel.sql",
+      "rows": [
+        [
+          "10930",
+          "6216",
+          "2347",
+          "896",
+          "56.9",
+          "37.8",
+          "38.2",
+          "8.2"
+        ]
+      ]
+    },
+    "q2": {
+      "median_ms": 1360.321,
+      "min_ms": 1263.648,
+      "max_ms": 1622.466,
+      "runs_ms": [
+        1376.253,
+        1360.321,
+        1331.468,
+        1622.466,
+        1263.648
+      ],
+      "planning_ms": 0.607,
+      "plan": [
+        "GroupAggregate  (cost=259247.34..261485.01 rows=24863 width=108) (actual time=1235.645..1260.442 rows=13 loops=1)",
+        "  Group Key: ((date_trunc('week'::text, (u.signup_at AT TIME ZONE 'UTC'::text)))::date)",
+        "  Buffers: shared hit=16047 read=153912",
+        "  ->  Sort  (cost=259247.34..259309.50 rows=24863 width=20) (actual time=1235.094..1238.468 rows=25000 loops=1)",
+        "        Sort Key: ((date_trunc('week'::text, (u.signup_at AT TIME ZONE 'UTC'::text)))::date)",
+        "        Sort Method: quicksort  Memory: 1940kB",
+        "        Buffers: shared hit=16047 read=153912",
+        "        ->  Hash Right Join  (cost=255422.18..257432.13 rows=24863 width=20) (actual time=1206.694..1228.050 rows=25000 loops=1)",
+        "              Hash Cond: (events.user_id = u.user_id)",
+        "              Buffers: shared hit=16047 read=153912",
+        "              ->  Finalize HashAggregate  (cost=252765.50..253571.45 rows=80595 width=16) (actual time=1193.305..1199.255 rows=25000 loops=1)",
+        "                    Group Key: events.user_id",
+        "                    Batches: 1  Memory Usage: 3345kB",
+        "                    Buffers: shared hit=15585 read=153912",
+        "                    ->  Gather  (cost=235034.60..251959.55 rows=161190 width=16) (actual time=1159.042..1171.322 rows=51302 loops=1)",
+        "                          Workers Planned: 2",
+        "                          Workers Launched: 2",
+        "                          Buffers: shared hit=15585 read=153912",
+        "                          ->  Partial HashAggregate  (cost=234034.60..234840.55 rows=80595 width=16) (actual time=1152.973..1157.498 rows=17101 loops=3)",
+        "                                Group Key: events.user_id",
+        "                                Batches: 1  Memory Usage: 2833kB",
+        "                                Buffers: shared hit=15585 read=153912",
+        "                                Worker 0:  Batches: 1  Memory Usage: 2833kB",
+        "                                Worker 1:  Batches: 1  Memory Usage: 2577kB",
+        "                                ->  Parallel Append  (cost=0.00..228689.38 rows=1069044 width=16) (actual time=0.258..825.520 rows=857581 loops=3)",
+        "                                      Buffers: shared hit=15585 read=153912",
+        "                                      ->  Seq Scan on events_2026_06 events_1  (cost=0.00..0.00 rows=1 width=16) (actual time=0.019..0.020 rows=0 loops=1)",
+        "                                            Filter: (tenant_id = 1)",
+        "                                      ->  Seq Scan on events_2026_11 events_6  (cost=0.00..0.00 rows=1 width=16) (actual time=0.012..0.013 rows=0 loops=1)",
+        "                                            Filter: (tenant_id = 1)",
+        "                                      ->  Seq Scan on events_2026_12 events_7  (cost=0.00..0.00 rows=1 width=16) (actual time=0.007..0.007 rows=0 loops=1)",
+        "                                            Filter: (tenant_id = 1)",
+        "                                      ->  Seq Scan on events_2027_01 events_8  (cost=0.00..0.00 rows=1 width=16) (actual time=0.007..0.007 rows=0 loops=1)",
+        "                                            Filter: (tenant_id = 1)",
+        "                                      ->  Seq Scan on events_default events_9  (cost=0.00..0.00 rows=1 width=16) (actual time=0.007..0.007 rows=0 loops=1)",
+        "                                            Filter: (tenant_id = 1)",
+        "                                      ->  Parallel Seq Scan on events_2026_09 events_4  (cost=0.00..97584.11 rows=466276 width=16) (actual time=0.044..292.084 rows=373381 loops=3)",
+        "                                            Filter: (tenant_id = 1)",
+        "                                            Rows Removed by Filter: 1132347",
+        "                                            Buffers: shared hit=14945 read=59112",
+        "                                      ->  Parallel Seq Scan on events_2026_08 events_3  (cost=0.00..69806.07 rows=331755 width=16) (actual time=0.035..353.195 rows=401183 loops=2)",
+        "                                            Filter: (tenant_id = 1)",
+        "                                            Rows Removed by Filter: 1214488",
+        "                                            Buffers: shared hit=320 read=52656",
+        "                                      ->  Parallel Seq Scan on events_2026_10 events_5  (cost=0.00..39531.72 rows=189700 width=16) (actual time=0.021..393.629 rows=454271 loops=1)",
+        "                                            Filter: (tenant_id = 1)",
+        "                                            Rows Removed by Filter: 1375628",
+        "                                            Buffers: shared hit=160 read=29841",
+        "                                      ->  Parallel Seq Scan on events_2026_07 events_2  (cost=0.00..16422.28 rows=81308 width=16) (actual time=0.605..184.828 rows=195964 loops=1)",
+        "                                            Filter: (tenant_id = 1)",
+        "                                            Rows Removed by Filter: 564217",
+        "                                            Buffers: shared hit=160 read=12303",
+        "              ->  Hash  (cost=2345.89..2345.89 rows=24863 width=16) (actual time=13.359..13.361 rows=25000 loops=1)",
+        "                    Buckets: 32768  Batches: 1  Memory Usage: 1428kB",
+        "                    Buffers: shared hit=462",
+        "                    ->  Bitmap Heap Scan on end_users u  (cost=581.11..2345.89 rows=24863 width=16) (actual time=1.246..7.313 rows=25000 loops=1)",
+        "                          Recheck Cond: (tenant_id = 1)",
+        "                          Heap Blocks: exact=364",
+        "                          Buffers: shared hit=462",
+        "                          ->  Bitmap Index Scan on end_users_pkey  (cost=0.00..574.89 rows=24863 width=0) (actual time=1.185..1.185 rows=25000 loops=1)",
+        "                                Index Cond: (tenant_id = 1)",
+        "                                Buffers: shared hit=98",
+        "Planning:",
+        "  Buffers: shared hit=5",
+        "Planning Time: 0.607 ms",
+        "Execution Time: 1263.648 ms"
+      ],
+      "file": "q2_retention_raw.sql",
+      "rows": [
+        [
+          "2026-07-13",
+          "594",
+          "594",
+          "421",
+          "70.9",
+          "594",
+          "132",
+          "22.2"
+        ],
+        [
+          "2026-07-20",
+          "1117",
+          "1117",
+          "757",
+          "67.8",
+          "1117",
+          "220",
+          "19.7"
+        ],
+        [
+          "2026-07-27",
+          "1334",
+          "1334",
+          "929",
+          "69.6",
+          "1334",
+          "295",
+          "22.1"
+        ],
+        [
+          "2026-08-03",
+          "1535",
+          "1535",
+          "1060",
+          "69.1",
+          "1535",
+          "334",
+          "21.8"
+        ],
+        [
+          "2026-08-10",
+          "1758",
+          "1758",
+          "1241",
+          "70.6",
+          "1758",
+          "398",
+          "22.6"
+        ],
+        [
+          "2026-08-17",
+          "1967",
+          "1967",
+          "1384",
+          "70.4",
+          "1967",
+          "432",
+          "22.0"
+        ],
+        [
+          "2026-08-24",
+          "2056",
+          "2056",
+          "1451",
+          "70.6",
+          "2056",
+          "409",
+          "19.9"
+        ],
+        [
+          "2026-08-31",
+          "2201",
+          "2201",
+          "1491",
+          "67.7",
+          "2201",
+          "431",
+          "19.6"
+        ],
+        [
+          "2026-09-07",
+          "2369",
+          "2369",
+          "1681",
+          "71.0",
+          "1508",
+          "280",
+          "18.6"
+        ],
+        [
+          "2026-09-14",
+          "2431",
+          "2431",
+          "1734",
+          "71.3",
+          "0",
+          "0",
+          "None"
+        ],
+        [
+          "2026-09-21",
+          "2447",
+          "2447",
+          "1758",
+          "71.8",
+          "0",
+          "0",
+          "None"
+        ],
+        [
+          "2026-09-28",
+          "2646",
+          "2445",
+          "1601",
+          "65.5",
+          "0",
+          "0",
+          "None"
+        ],
+        [
+          "2026-10-05",
+          "2545",
+          "0",
+          "0",
+          "None",
+          "0",
+          "0",
+          "None"
+        ]
+      ]
+    },
+    "q3": {
+      "median_ms": 2128.543,
+      "min_ms": 2086.823,
+      "max_ms": 2627.593,
+      "runs_ms": [
+        2093.958,
+        2627.593,
+        2128.543,
+        2311.908,
+        2086.823
+      ],
+      "planning_ms": 1.039,
+      "plan": [
+        "WindowAgg  (cost=251628.84..462995.23 rows=1232698 width=52) (actual time=1512.936..2084.186 rows=31 loops=1)",
+        "  Buffers: shared hit=76 read=81329, temp read=3908 written=3926",
+        "  ->  WindowAgg  (cost=251628.84..438341.27 rows=1232698 width=44) (actual time=1496.415..2083.958 rows=31 loops=1)",
+        "        Buffers: shared hit=76 read=81329, temp read=3908 written=3926",
+        "        ->  GroupAggregate  (cost=251628.84..419850.80 rows=1232698 width=12) (actual time=1480.859..2083.521 rows=31 loops=1)",
+        "              Group Key: (((events.occurred_at AT TIME ZONE 'UTC'::text))::date)",
+        "              Buffers: shared hit=76 read=81329, temp read=3908 written=3926",
+        "              ->  Gather Merge  (cost=251628.84..395196.84 rows=1232698 width=12) (actual time=1462.324..1910.822 rows=1225865 loops=1)",
+        "                    Workers Planned: 2",
+        "                    Workers Launched: 2",
+        "                    Buffers: shared hit=76 read=81329, temp read=3908 written=3926",
+        "                    ->  Sort  (cost=250628.81..251912.88 rows=513629 width=12) (actual time=1446.638..1518.059 rows=408622 loops=3)",
+        "                          Sort Key: (((events.occurred_at AT TIME ZONE 'UTC'::text))::date), events.user_id",
+        "                          Sort Method: external merge  Disk: 11744kB",
+        "                          Buffers: shared hit=76 read=81329, temp read=3908 written=3926",
+        "                          Worker 0:  Sort Method: external merge  Disk: 10504kB",
+        "                          Worker 1:  Sort Method: external merge  Disk: 9016kB",
+        "                          ->  Parallel Append  (cost=0.00..193132.16 rows=513629 width=12) (actual time=1.884..1067.690 rows=408622 loops=3)",
+        "                                Buffers: shared hit=47 read=81322",
+        "                                Subplans Removed: 7",
+        "                                ->  Parallel Bitmap Heap Scan on events_2026_09 events_1  (cost=248.27..132911.74 rows=323960 width=12) (actual time=1.933..777.436 rows=257198 loops=3)",
+        "                                      Recheck Cond: ((occurred_at >= (((((now() AT TIME ZONE 'UTC'::text))::date - 30))::timestamp without time zone AT TIME ZONE 'UTC'::text)) AND (occurred_at < now()))",
+        "                                      Rows Removed by Index Recheck: 634",
+        "                                      Filter: (tenant_id = 1)",
+        "                                      Rows Removed by Filter: 785296",
+        "                                      Heap Blocks: lossy=15063",
+        "                                      Buffers: shared hit=47 read=51321",
+        "                                      ->  Bitmap Index Scan on events_2026_09_occurred_at_idx  (cost=0.00..53.89 rows=3139604 width=0) (actual time=4.416..4.417 rows=513050 loops=1)",
+        "                                            Index Cond: ((occurred_at >= (((((now() AT TIME ZONE 'UTC'::text))::date - 30))::timestamp without time zone AT TIME ZONE 'UTC'::text)) AND (occurred_at < now()))",
+        "                                            Buffers: shared hit=47 read=16",
+        "                                ->  Parallel Seq Scan on events_2026_10 events_2  (cost=0.00..57635.34 rows=189662 width=12) (actual time=0.038..356.590 rows=227136 loops=2)",
+        "                                      Filter: ((tenant_id = 1) AND (occurred_at < now()) AND (occurred_at >= (((((now() AT TIME ZONE 'UTC'::text))::date - 30))::timestamp without time zone AT TIME ZONE 'UTC'::text)))",
+        "                                      Rows Removed by Filter: 687814",
+        "                                      Buffers: shared read=30001",
+        "Planning:",
+        "  Buffers: shared hit=1 read=13",
+        "Planning Time: 1.039 ms",
+        "Execution Time: 2086.823 ms"
+      ],
+      "file": "q3_dau_raw.sql",
+      "rows": [
+        [
+          "2026-09-11",
+          "5107",
+          "5107.0",
+          "None"
+        ],
+        [
+          "2026-09-12",
+          "5230",
+          "5168.5",
+          "None"
+        ],
+        [
+          "2026-09-13",
+          "5246",
+          "5194.3",
+          "None"
+        ],
+        [
+          "2026-09-14",
+          "5263",
+          "5211.5",
+          "None"
+        ],
+        [
+          "2026-09-15",
+          "5329",
+          "5235.0",
+          "None"
+        ],
+        [
+          "2026-09-16",
+          "5415",
+          "5265.0",
+          "None"
+        ],
+        [
+          "2026-09-17",
+          "5485",
+          "5296.4",
+          "None"
+        ],
+        [
+          "2026-09-18",
+          "5530",
+          "5356.9",
+          "423"
+        ],
+        [
+          "2026-09-19",
+          "5538",
+          "5400.9",
+          "308"
+        ],
+        [
+          "2026-09-20",
+          "5599",
+          "5451.3",
+          "353"
+        ],
+        [
+          "2026-09-21",
+          "5585",
+          "5497.3",
+          "322"
+        ],
+        [
+          "2026-09-22",
+          "5669",
+          "5545.9",
+          "340"
+        ],
+        [
+          "2026-09-23",
+          "5687",
+          "5584.7",
+          "272"
+        ],
+        [
+          "2026-09-24",
+          "5739",
+          "5621.0",
+          "254"
+        ],
+        [
+          "2026-09-25",
+          "5771",
+          "5655.4",
+          "241"
+        ],
+        [
+          "2026-09-26",
+          "5808",
+          "5694.0",
+          "270"
+        ],
+        [
+          "2026-09-27",
+          "5879",
+          "5734.0",
+          "280"
+        ],
+        [
+          "2026-09-28",
+          "5943",
+          "5785.1",
+          "358"
+        ],
+        [
+          "2026-09-29",
+          "5914",
+          "5820.1",
+          "245"
+        ],
+        [
+          "2026-09-30",
+          "6010",
+          "5866.3",
+          "323"
+        ],
+        [
+          "2026-10-01",
+          "6020",
+          "5906.4",
+          "281"
+        ],
+        [
+          "2026-10-02",
+          "6103",
+          "5953.9",
+          "332"
+        ],
+        [
+          "2026-10-03",
+          "6129",
+          "5999.7",
+          "321"
+        ],
+        [
+          "2026-10-04",
+          "6153",
+          "6038.9",
+          "274"
+        ],
+        [
+          "2026-10-05",
+          "6170",
+          "6071.3",
+          "227"
+        ],
+        [
+          "2026-10-06",
+          "6286",
+          "6124.4",
+          "372"
+        ],
+        [
+          "2026-10-07",
+          "6222",
+          "6154.7",
+          "212"
+        ],
+        [
+          "2026-10-08",
+          "6290",
+          "6193.3",
+          "270"
+        ],
+        [
+          "2026-10-09",
+          "6355",
+          "6229.3",
+          "252"
+        ],
+        [
+          "2026-10-10",
+          "6466",
+          "6277.4",
+          "337"
+        ],
+        [
+          "2026-10-11",
+          "5130",
+          "6131.3",
+          "-1023"
+        ]
+      ]
+    },
+    "q4": {
+      "median_ms": 41.385,
+      "min_ms": 40.907,
+      "max_ms": 46.286,
+      "runs_ms": [
+        45.518,
+        41.349,
+        41.385,
+        46.286,
+        40.907
+      ],
+      "planning_ms": 1.329,
+      "plan": [
+        "GroupAggregate  (cost=4491.00..4722.54 rows=3859 width=114) (actual time=39.840..40.812 rows=12 loops=1)",
+        "  Group Key: ((date_trunc('month'::text, (u.signup_at AT TIME ZONE 'UTC'::text)))::date), pl.name",
+        "  Buffers: shared hit=1707",
+        "  ->  Sort  (cost=4491.00..4500.64 rows=3859 width=28) (actual time=39.799..39.996 rows=3859 loops=1)",
+        "        Sort Key: ((date_trunc('month'::text, (u.signup_at AT TIME ZONE 'UTC'::text)))::date), pl.name",
+        "        Sort Method: quicksort  Memory: 328kB",
+        "        Buffers: shared hit=1707",
+        "        ->  Hash Join  (cost=1001.74..4261.12 rows=3859 width=28) (actual time=9.692..38.522 rows=3859 loops=1)",
+        "              Hash Cond: (s.plan_id = pl.plan_id)",
+        "              Buffers: shared hit=1707",
+        "              ->  Hash Join  (cost=1000.65..4210.22 rows=3859 width=28) (actual time=9.659..36.448 rows=3859 loops=1)",
+        "                    Hash Cond: ((u.tenant_id = s.tenant_id) AND (u.user_id = s.user_id))",
+        "                    Buffers: shared hit=1706",
+        "                    ->  Seq Scan on end_users u  (cost=0.00..2454.00 rows=100000 width=20) (actual time=0.005..8.618 rows=100000 loops=1)",
+        "                          Buffers: shared hit=1454",
+        "                    ->  Hash  (cost=942.76..942.76 rows=3859 width=32) (actual time=9.640..9.642 rows=3859 loops=1)",
+        "                          Buckets: 4096  Batches: 1  Memory Usage: 281kB",
+        "                          Buffers: shared hit=252",
+        "                          ->  Hash Join  (cost=308.47..942.76 rows=3859 width=32) (actual time=4.144..8.483 rows=3859 loops=1)",
+        "                                Hash Cond: (p.subscription_id = s.subscription_id)",
+        "                                Buffers: shared hit=252",
+        "                                ->  Seq Scan on payments p  (cost=0.00..624.16 rows=3859 width=26) (actual time=0.010..3.044 rows=3859 loops=1)",
+        "                                      Filter: ((tenant_id = 1) AND (paid_at >= (((((now() AT TIME ZONE 'UTC'::text))::date - 90))::timestamp without time zone AT TIME ZONE 'UTC'::text)))",
+        "                                      Rows Removed by Filter: 11613",
+        "                                      Buffers: shared hit=160",
+        "                                ->  Hash  (cost=188.21..188.21 rows=9621 width=22) (actual time=4.115..4.116 rows=9621 loops=1)",
+        "                                      Buckets: 16384  Batches: 1  Memory Usage: 673kB",
+        "                                      Buffers: shared hit=92",
+        "                                      ->  Seq Scan on subscriptions s  (cost=0.00..188.21 rows=9621 width=22) (actual time=0.004..1.760 rows=9621 loops=1)",
+        "                                            Buffers: shared hit=92",
+        "              ->  Hash  (cost=1.04..1.04 rows=4 width=8) (actual time=0.022..0.023 rows=4 loops=1)",
+        "                    Buckets: 1024  Batches: 1  Memory Usage: 9kB",
+        "                    Buffers: shared hit=1",
+        "                    ->  Seq Scan on plans pl  (cost=0.00..1.04 rows=4 width=8) (actual time=0.015..0.017 rows=4 loops=1)",
+        "                          Buffers: shared hit=1",
+        "Planning:",
+        "  Buffers: shared hit=16",
+        "Planning Time: 1.329 ms",
+        "Execution Time: 40.907 ms"
+      ],
+      "file": "q4_revenue_raw.sql",
+      "rows": [
+        [
+          "2026-07-01",
+          "business",
+          "76",
+          "1512400",
+          "0",
+          "199.00"
+        ],
+        [
+          "2026-07-01",
+          "pro",
+          "252",
+          "1234800",
+          "0",
+          "49.00"
+        ],
+        [
+          "2026-07-01",
+          "starter",
+          "441",
+          "837900",
+          "0",
+          "19.00"
+        ],
+        [
+          "2026-08-01",
+          "business",
+          "155",
+          "3084500",
+          "0",
+          "199.00"
+        ],
+        [
+          "2026-08-01",
+          "pro",
+          "536",
+          "2626400",
+          "0",
+          "49.00"
+        ],
+        [
+          "2026-08-01",
+          "starter",
+          "996",
+          "1892400",
+          "0",
+          "19.00"
+        ],
+        [
+          "2026-09-01",
+          "business",
+          "104",
+          "2069600",
+          "0",
+          "199.00"
+        ],
+        [
+          "2026-09-01",
+          "pro",
+          "376",
+          "1842400",
+          "0",
+          "49.00"
+        ],
+        [
+          "2026-09-01",
+          "starter",
+          "713",
+          "1354700",
+          "0",
+          "19.00"
+        ],
+        [
+          "2026-10-01",
+          "business",
+          "18",
+          "358200",
+          "0",
+          "199.00"
+        ],
+        [
+          "2026-10-01",
+          "pro",
+          "67",
+          "328300",
+          "0",
+          "49.00"
+        ],
+        [
+          "2026-10-01",
+          "starter",
+          "125",
+          "237500",
+          "0",
+          "19.00"
+        ]
+      ]
+    },
+    "q5": {
+      "median_ms": 1781.205,
+      "min_ms": 1718.889,
+      "max_ms": 1882.096,
+      "runs_ms": [
+        1718.889,
+        1781.205,
+        1882.096,
+        1768.194,
+        1801.915
+      ],
+      "planning_ms": 0.867,
+      "plan": [
+        "GroupAggregate  (cost=265929.88..266683.28 rows=5233 width=36) (actual time=1769.840..1801.800 rows=244 loops=1)",
+        "  Group Key: (((e.occurred_at AT TIME ZONE 'UTC'::text))::date), u.acquisition_channel",
+        "  Buffers: shared hit=48 read=147237",
+        "  ->  Gather Merge  (cost=265929.88..266526.29 rows=5233 width=67) (actual time=1769.798..1791.309 rows=21508 loops=1)",
+        "        Workers Planned: 1",
+        "        Workers Launched: 1",
+        "        Buffers: shared hit=48 read=147237",
+        "        ->  Sort  (cost=264929.87..264937.57 rows=3078 width=67) (actual time=1765.268..1766.849 rows=10754 loops=2)",
+        "              Sort Key: (((e.occurred_at AT TIME ZONE 'UTC'::text))::date), u.acquisition_channel, e.user_id",
+        "              Sort Method: quicksort  Memory: 1772kB",
+        "              Buffers: shared hit=48 read=147237",
+        "              Worker 0:  Sort Method: quicksort  Memory: 1686kB",
+        "              ->  Parallel Hash Join  (cost=262479.18..264751.54 rows=3078 width=67) (actual time=1726.774..1749.467 rows=10754 loops=2)",
+        "                    Hash Cond: (u.user_id = e.user_id)",
+        "                    Buffers: shared hit=27 read=147231",
+        "                    ->  Parallel Seq Scan on end_users u  (cost=0.00..2189.29 rows=14625 width=20) (actual time=0.123..10.532 rows=12500 loops=2)",
+        "                          Filter: (tenant_id = 1)",
+        "                          Rows Removed by Filter: 37500",
+        "                          Buffers: shared read=1454",
+        "                    ->  Parallel Hash  (cost=262369.53..262369.53 rows=8772 width=67) (actual time=1726.071..1726.074 rows=10754 loops=2)",
+        "                          Buckets: 32768  Batches: 1  Memory Usage: 3008kB",
+        "                          Buffers: shared read=145773",
+        "                          ->  Parallel Append  (cost=0.00..262369.53 rows=8772 width=67) (actual time=60.962..1714.384 rows=10754 loops=2)",
+        "                                Buffers: shared read=145773",
+        "                                Subplans Removed: 6",
+        "                                ->  Parallel Bitmap Heap Scan on events_2026_08 e_1  (cost=26245.73..85532.00 rows=2256 width=67) (actual time=121.415..620.746 rows=5596 loops=1)",
+        "                                      Recheck Cond: ((tenant_id = 1) AND (occurred_at >= (now() - '60 days'::interval)) AND (occurred_at < now()))",
+        "                                      Filter: (properties @> '{\"campaign\": \"autumn_sale\"}'::jsonb)",
+        "                                      Rows Removed by Filter: 555788",
+        "                                      Buffers: shared read=41715",
+        "                                      ->  Bitmap Index Scan on events_2026_08_pkey  (cost=0.00..26244.38 rows=550715 width=0) (actual time=112.498..112.498 rows=561384 loops=1)",
+        "                                            Index Cond: ((tenant_id = 1) AND (occurred_at >= (now() - '60 days'::interval)) AND (occurred_at < now()))",
+        "                                            Buffers: shared read=4971",
+        "                                ->  Parallel Seq Scan on events_2026_09 e_2  (cost=0.00..125816.64 rows=4506 width=67) (actual time=0.155..1029.572 rows=5626 loops=2)",
+        "                                      Filter: ((properties @> '{\"campaign\": \"autumn_sale\"}'::jsonb) AND (tenant_id = 1) AND (occurred_at < now()) AND (occurred_at >= (now() - '60 days'::interval)))",
+        "                                      Rows Removed by Filter: 2252966",
+        "                                      Buffers: shared read=74057",
+        "                                ->  Parallel Seq Scan on events_2026_10 e_3  (cost=0.00..50968.59 rows=2004 width=67) (actual time=0.507..743.582 rows=4659 loops=1)",
+        "                                      Filter: ((properties @> '{\"campaign\": \"autumn_sale\"}'::jsonb) AND (tenant_id = 1) AND (occurred_at < now()) AND (occurred_at >= (now() - '60 days'::interval)))",
+        "                                      Rows Removed by Filter: 1825240",
+        "                                      Buffers: shared read=30001",
+        "Planning:",
+        "  Buffers: shared read=14",
+        "Planning Time: 0.867 ms",
+        "Execution Time: 1801.915 ms"
+      ],
+      "file": "q5_campaign.sql",
+      "rows": [
+        [
+          "2026-08-12",
+          "organic",
+          "49",
+          "47",
+          "17"
+        ],
+        [
+          "2026-08-12",
+          "paid_search",
+          "35",
+          "33",
+          "7"
+        ],
+        [
+          "2026-08-12",
+          "referral",
+          "9",
+          "9",
+          "1"
+        ],
+        [
+          "2026-08-12",
+          "social",
+          "31",
+          "30",
+          "7"
+        ],
+        [
+          "2026-08-13",
+          "organic",
+          "96",
+          "88",
+          "36"
+        ],
+        [
+          "2026-08-13",
+          "paid_search",
+          "52",
+          "44",
+          "15"
+        ],
+        [
+          "2026-08-13",
+          "referral",
+          "31",
+          "29",
+          "10"
+        ],
+        [
+          "2026-08-13",
+          "social",
+          "60",
+          "51",
+          "20"
+        ],
+        [
+          "2026-08-14",
+          "organic",
+          "105",
+          "92",
+          "32"
+        ],
+        [
+          "2026-08-14",
+          "paid_search",
+          "63",
+          "54",
+          "22"
+        ],
+        [
+          "2026-08-14",
+          "referral",
+          "37",
+          "31",
+          "9"
+        ],
+        [
+          "2026-08-14",
+          "social",
+          "59",
+          "50",
+          "15"
+        ],
+        [
+          "2026-08-15",
+          "organic",
+          "125",
+          "107",
+          "43"
+        ],
+        [
+          "2026-08-15",
+          "paid_search",
+          "46",
+          "41",
+          "9"
+        ],
+        [
+          "2026-08-15",
+          "referral",
+          "43",
+          "37",
+          "12"
+        ],
+        [
+          "2026-08-15",
+          "social",
+          "41",
+          "38",
+          "13"
+        ],
+        [
+          "2026-08-16",
+          "organic",
+          "107",
+          "99",
+          "32"
+        ],
+        [
+          "2026-08-16",
+          "paid_search",
+          "72",
+          "67",
+          "30"
+        ],
+        [
+          "2026-08-16",
+          "referral",
+          "39",
+          "38",
+          "10"
+        ],
+        [
+          "2026-08-16",
+          "social",
+          "53",
+          "47",
+          "18"
+        ],
+        [
+          "2026-08-17",
+          "organic",
+          "105",
+          "96",
+          "34"
+        ],
+        [
+          "2026-08-17",
+          "paid_search",
+          "60",
+          "53",
+          "23"
+        ],
+        [
+          "2026-08-17",
+          "referral",
+          "40",
+          "33",
+          "17"
+        ],
+        [
+          "2026-08-17",
+          "social",
+          "54",
+          "50",
+          "13"
+        ],
+        [
+          "2026-08-18",
+          "organic",
+          "139",
+          "125",
+          "51"
+        ],
+        [
+          "2026-08-18",
+          "paid_search",
+          "82",
+          "70",
+          "24"
+        ],
+        [
+          "2026-08-18",
+          "referral",
+          "39",
+          "37",
+          "8"
+        ],
+        [
+          "2026-08-18",
+          "social",
+          "57",
+          "55",
+          "15"
+        ],
+        [
+          "2026-08-19",
+          "organic",
+          "96",
+          "91",
+          "30"
+        ],
+        [
+          "2026-08-19",
+          "paid_search",
+          "87",
+          "76",
+          "28"
+        ],
+        [
+          "2026-08-19",
+          "referral",
+          "41",
+          "41",
+          "17"
+        ],
+        [
+          "2026-08-19",
+          "social",
+          "45",
+          "43",
+          "13"
+        ],
+        [
+          "2026-08-20",
+          "organic",
+          "105",
+          "91",
+          "35"
+        ],
+        [
+          "2026-08-20",
+          "paid_search",
+          "60",
+          "55",
+          "18"
+        ],
+        [
+          "2026-08-20",
+          "referral",
+          "51",
+          "46",
+          "11"
+        ],
+        [
+          "2026-08-20",
+          "social",
+          "56",
+          "47",
+          "20"
+        ],
+        [
+          "2026-08-21",
+          "organic",
+          "98",
+          "91",
+          "32"
+        ],
+        [
+          "2026-08-21",
+          "paid_search",
+          "75",
+          "65",
+          "28"
+        ],
+        [
+          "2026-08-21",
+          "referral",
+          "34",
+          "28",
+          "12"
+        ],
+        [
+          "2026-08-21",
+          "social",
+          "62",
+          "57",
+          "18"
+        ],
+        [
+          "2026-08-22",
+          "organic",
+          "113",
+          "105",
+          "38"
+        ],
+        [
+          "2026-08-22",
+          "paid_search",
+          "75",
+          "65",
+          "22"
+        ],
+        [
+          "2026-08-22",
+          "referral",
+          "38",
+          "34",
+          "9"
+        ],
+        [
+          "2026-08-22",
+          "social",
+          "41",
+          "37",
+          "15"
+        ],
+        [
+          "2026-08-23",
+          "organic",
+          "106",
+          "95",
+          "32"
+        ],
+        [
+          "2026-08-23",
+          "paid_search",
+          "85",
+          "72",
+          "25"
+        ],
+        [
+          "2026-08-23",
+          "referral",
+          "41",
+          "39",
+          "19"
+        ],
+        [
+          "2026-08-23",
+          "social",
+          "70",
+          "64",
+          "34"
+        ],
+        [
+          "2026-08-24",
+          "organic",
+          "127",
+          "117",
+          "38"
+        ],
+        [
+          "2026-08-24",
+          "paid_search",
+          "82",
+          "73",
+          "27"
+        ],
+        [
+          "2026-08-24",
+          "referral",
+          "39",
+          "38",
+          "12"
+        ],
+        [
+          "2026-08-24",
+          "social",
+          "56",
+          "48",
+          "16"
+        ],
+        [
+          "2026-08-25",
+          "organic",
+          "120",
+          "111",
+          "41"
+        ],
+        [
+          "2026-08-25",
+          "paid_search",
+          "93",
+          "86",
+          "32"
+        ],
+        [
+          "2026-08-25",
+          "referral",
+          "46",
+          "41",
+          "14"
+        ],
+        [
+          "2026-08-25",
+          "social",
+          "74",
+          "67",
+          "29"
+        ],
+        [
+          "2026-08-26",
+          "organic",
+          "103",
+          "91",
+          "37"
+        ],
+        [
+          "2026-08-26",
+          "paid_search",
+          "101",
+          "92",
+          "36"
+        ],
+        [
+          "2026-08-26",
+          "referral",
+          "43",
+          "36",
+          "14"
+        ],
+        [
+          "2026-08-26",
+          "social",
+          "82",
+          "68",
+          "28"
+        ],
+        [
+          "2026-08-27",
+          "organic",
+          "103",
+          "94",
+          "32"
+        ],
+        [
+          "2026-08-27",
+          "paid_search",
+          "65",
+          "61",
+          "20"
+        ],
+        [
+          "2026-08-27",
+          "referral",
+          "51",
+          "48",
+          "14"
+        ],
+        [
+          "2026-08-27",
+          "social",
+          "50",
+          "45",
+          "12"
+        ],
+        [
+          "2026-08-28",
+          "organic",
+          "127",
+          "117",
+          "40"
+        ],
+        [
+          "2026-08-28",
+          "paid_search",
+          "82",
+          "72",
+          "31"
+        ],
+        [
+          "2026-08-28",
+          "referral",
+          "50",
+          "44",
+          "10"
+        ],
+        [
+          "2026-08-28",
+          "social",
+          "59",
+          "53",
+          "17"
+        ],
+        [
+          "2026-08-29",
+          "organic",
+          "127",
+          "116",
+          "42"
+        ],
+        [
+          "2026-08-29",
+          "paid_search",
+          "87",
+          "80",
+          "27"
+        ],
+        [
+          "2026-08-29",
+          "referral",
+          "47",
+          "47",
+          "15"
+        ],
+        [
+          "2026-08-29",
+          "social",
+          "67",
+          "56",
+          "24"
+        ],
+        [
+          "2026-08-30",
+          "organic",
+          "112",
+          "110",
+          "46"
+        ],
+        [
+          "2026-08-30",
+          "paid_search",
+          "77",
+          "67",
+          "35"
+        ],
+        [
+          "2026-08-30",
+          "referral",
+          "50",
+          "44",
+          "19"
+        ],
+        [
+          "2026-08-30",
+          "social",
+          "61",
+          "54",
+          "22"
+        ],
+        [
+          "2026-08-31",
+          "organic",
+          "102",
+          "95",
+          "26"
+        ],
+        [
+          "2026-08-31",
+          "paid_search",
+          "91",
+          "80",
+          "28"
+        ],
+        [
+          "2026-08-31",
+          "referral",
+          "42",
+          "38",
+          "16"
+        ],
+        [
+          "2026-08-31",
+          "social",
+          "72",
+          "62",
+          "19"
+        ],
+        [
+          "2026-09-01",
+          "organic",
+          "123",
+          "110",
+          "45"
+        ],
+        [
+          "2026-09-01",
+          "paid_search",
+          "77",
+          "69",
+          "20"
+        ],
+        [
+          "2026-09-01",
+          "referral",
+          "45",
+          "41",
+          "14"
+        ],
+        [
+          "2026-09-01",
+          "social",
+          "82",
+          "69",
+          "30"
+        ],
+        [
+          "2026-09-02",
+          "organic",
+          "118",
+          "111",
+          "40"
+        ],
+        [
+          "2026-09-02",
+          "paid_search",
+          "107",
+          "91",
+          "31"
+        ],
+        [
+          "2026-09-02",
+          "referral",
+          "64",
+          "56",
+          "21"
+        ],
+        [
+          "2026-09-02",
+          "social",
+          "67",
+          "62",
+          "21"
+        ],
+        [
+          "2026-09-03",
+          "organic",
+          "133",
+          "122",
+          "42"
+        ],
+        [
+          "2026-09-03",
+          "paid_search",
+          "86",
+          "72",
+          "29"
+        ],
+        [
+          "2026-09-03",
+          "referral",
+          "48",
+          "43",
+          "13"
+        ],
+        [
+          "2026-09-03",
+          "social",
+          "68",
+          "61",
+          "26"
+        ],
+        [
+          "2026-09-04",
+          "organic",
+          "126",
+          "117",
+          "41"
+        ],
+        [
+          "2026-09-04",
+          "paid_search",
+          "85",
+          "79",
+          "35"
+        ],
+        [
+          "2026-09-04",
+          "referral",
+          "46",
+          "41",
+          "17"
+        ],
+        [
+          "2026-09-04",
+          "social",
+          "67",
+          "62",
+          "15"
+        ],
+        [
+          "2026-09-05",
+          "organic",
+          "140",
+          "124",
+          "43"
+        ],
+        [
+          "2026-09-05",
+          "paid_search",
+          "93",
+          "82",
+          "32"
+        ],
+        [
+          "2026-09-05",
+          "referral",
+          "39",
+          "37",
+          "6"
+        ],
+        [
+          "2026-09-05",
+          "social",
+          "69",
+          "60",
+          "22"
+        ],
+        [
+          "2026-09-06",
+          "organic",
+          "130",
+          "125",
+          "48"
+        ],
+        [
+          "2026-09-06",
+          "paid_search",
+          "83",
+          "72",
+          "20"
+        ],
+        [
+          "2026-09-06",
+          "referral",
+          "53",
+          "50",
+          "18"
+        ],
+        [
+          "2026-09-06",
+          "social",
+          "70",
+          "59",
+          "18"
+        ],
+        [
+          "2026-09-07",
+          "organic",
+          "129",
+          "120",
+          "43"
+        ],
+        [
+          "2026-09-07",
+          "paid_search",
+          "82",
+          "75",
+          "25"
+        ],
+        [
+          "2026-09-07",
+          "referral",
+          "46",
+          "44",
+          "16"
+        ],
+        [
+          "2026-09-07",
+          "social",
+          "81",
+          "69",
+          "30"
+        ],
+        [
+          "2026-09-08",
+          "organic",
+          "138",
+          "124",
+          "54"
+        ],
+        [
+          "2026-09-08",
+          "paid_search",
+          "95",
+          "84",
+          "36"
+        ],
+        [
+          "2026-09-08",
+          "referral",
+          "58",
+          "55",
+          "18"
+        ],
+        [
+          "2026-09-08",
+          "social",
+          "73",
+          "65",
+          "26"
+        ],
+        [
+          "2026-09-09",
+          "organic",
+          "128",
+          "119",
+          "41"
+        ],
+        [
+          "2026-09-09",
+          "paid_search",
+          "90",
+          "82",
+          "34"
+        ],
+        [
+          "2026-09-09",
+          "referral",
+          "71",
+          "65",
+          "26"
+        ],
+        [
+          "2026-09-09",
+          "social",
+          "84",
+          "76",
+          "28"
+        ],
+        [
+          "2026-09-10",
+          "organic",
+          "128",
+          "122",
+          "47"
+        ],
+        [
+          "2026-09-10",
+          "paid_search",
+          "77",
+          "69",
+          "30"
+        ],
+        [
+          "2026-09-10",
+          "referral",
+          "47",
+          "43",
+          "17"
+        ],
+        [
+          "2026-09-10",
+          "social",
+          "76",
+          "70",
+          "28"
+        ],
+        [
+          "2026-09-11",
+          "organic",
+          "143",
+          "128",
+          "49"
+        ],
+        [
+          "2026-09-11",
+          "paid_search",
+          "89",
+          "72",
+          "24"
+        ],
+        [
+          "2026-09-11",
+          "referral",
+          "57",
+          "54",
+          "15"
+        ],
+        [
+          "2026-09-11",
+          "social",
+          "63",
+          "56",
+          "23"
+        ],
+        [
+          "2026-09-12",
+          "organic",
+          "164",
+          "155",
+          "55"
+        ],
+        [
+          "2026-09-12",
+          "paid_search",
+          "80",
+          "73",
+          "24"
+        ],
+        [
+          "2026-09-12",
+          "referral",
+          "55",
+          "54",
+          "25"
+        ],
+        [
+          "2026-09-12",
+          "social",
+          "76",
+          "68",
+          "26"
+        ],
+        [
+          "2026-09-13",
+          "organic",
+          "115",
+          "108",
+          "43"
+        ],
+        [
+          "2026-09-13",
+          "paid_search",
+          "89",
+          "72",
+          "33"
+        ],
+        [
+          "2026-09-13",
+          "referral",
+          "53",
+          "47",
+          "27"
+        ],
+        [
+          "2026-09-13",
+          "social",
+          "80",
+          "72",
+          "28"
+        ],
+        [
+          "2026-09-14",
+          "organic",
+          "157",
+          "139",
+          "56"
+        ],
+        [
+          "2026-09-14",
+          "paid_search",
+          "83",
+          "81",
+          "27"
+        ],
+        [
+          "2026-09-14",
+          "referral",
+          "56",
+          "55",
+          "24"
+        ],
+        [
+          "2026-09-14",
+          "social",
+          "70",
+          "68",
+          "24"
+        ],
+        [
+          "2026-09-15",
+          "organic",
+          "149",
+          "136",
+          "57"
+        ],
+        [
+          "2026-09-15",
+          "paid_search",
+          "110",
+          "102",
+          "33"
+        ],
+        [
+          "2026-09-15",
+          "referral",
+          "48",
+          "46",
+          "15"
+        ],
+        [
+          "2026-09-15",
+          "social",
+          "77",
+          "68",
+          "28"
+        ],
+        [
+          "2026-09-16",
+          "organic",
+          "166",
+          "149",
+          "51"
+        ],
+        [
+          "2026-09-16",
+          "paid_search",
+          "87",
+          "73",
+          "30"
+        ],
+        [
+          "2026-09-16",
+          "referral",
+          "44",
+          "42",
+          "10"
+        ],
+        [
+          "2026-09-16",
+          "social",
+          "59",
+          "55",
+          "17"
+        ],
+        [
+          "2026-09-17",
+          "organic",
+          "160",
+          "142",
+          "72"
+        ],
+        [
+          "2026-09-17",
+          "paid_search",
+          "102",
+          "90",
+          "34"
+        ],
+        [
+          "2026-09-17",
+          "referral",
+          "74",
+          "68",
+          "25"
+        ],
+        [
+          "2026-09-17",
+          "social",
+          "79",
+          "68",
+          "21"
+        ],
+        [
+          "2026-09-18",
+          "organic",
+          "184",
+          "161",
+          "65"
+        ],
+        [
+          "2026-09-18",
+          "paid_search",
+          "95",
+          "87",
+          "31"
+        ],
+        [
+          "2026-09-18",
+          "referral",
+          "65",
+          "62",
+          "20"
+        ],
+        [
+          "2026-09-18",
+          "social",
+          "83",
+          "76",
+          "27"
+        ],
+        [
+          "2026-09-19",
+          "organic",
+          "167",
+          "151",
+          "54"
+        ],
+        [
+          "2026-09-19",
+          "paid_search",
+          "90",
+          "81",
+          "35"
+        ],
+        [
+          "2026-09-19",
+          "referral",
+          "68",
+          "65",
+          "26"
+        ],
+        [
+          "2026-09-19",
+          "social",
+          "86",
+          "77",
+          "27"
+        ],
+        [
+          "2026-09-20",
+          "organic",
+          "164",
+          "151",
+          "59"
+        ],
+        [
+          "2026-09-20",
+          "paid_search",
+          "94",
+          "80",
+          "32"
+        ],
+        [
+          "2026-09-20",
+          "referral",
+          "47",
+          "46",
+          "17"
+        ],
+        [
+          "2026-09-20",
+          "social",
+          "74",
+          "71",
+          "29"
+        ],
+        [
+          "2026-09-21",
+          "organic",
+          "154",
+          "143",
+          "56"
+        ],
+        [
+          "2026-09-21",
+          "paid_search",
+          "89",
+          "82",
+          "37"
+        ],
+        [
+          "2026-09-21",
+          "referral",
+          "68",
+          "66",
+          "26"
+        ],
+        [
+          "2026-09-21",
+          "social",
+          "80",
+          "74",
+          "24"
+        ],
+        [
+          "2026-09-22",
+          "organic",
+          "161",
+          "151",
+          "47"
+        ],
+        [
+          "2026-09-22",
+          "paid_search",
+          "95",
+          "90",
+          "30"
+        ],
+        [
+          "2026-09-22",
+          "referral",
+          "63",
+          "61",
+          "23"
+        ],
+        [
+          "2026-09-22",
+          "social",
+          "88",
+          "85",
+          "32"
+        ],
+        [
+          "2026-09-23",
+          "organic",
+          "152",
+          "138",
+          "59"
+        ],
+        [
+          "2026-09-23",
+          "paid_search",
+          "115",
+          "95",
+          "28"
+        ],
+        [
+          "2026-09-23",
+          "referral",
+          "57",
+          "55",
+          "17"
+        ],
+        [
+          "2026-09-23",
+          "social",
+          "79",
+          "73",
+          "24"
+        ],
+        [
+          "2026-09-24",
+          "organic",
+          "156",
+          "144",
+          "56"
+        ],
+        [
+          "2026-09-24",
+          "paid_search",
+          "98",
+          "91",
+          "34"
+        ],
+        [
+          "2026-09-24",
+          "referral",
+          "61",
+          "60",
+          "21"
+        ],
+        [
+          "2026-09-24",
+          "social",
+          "84",
+          "79",
+          "31"
+        ],
+        [
+          "2026-09-25",
+          "organic",
+          "165",
+          "149",
+          "61"
+        ],
+        [
+          "2026-09-25",
+          "paid_search",
+          "120",
+          "101",
+          "38"
+        ],
+        [
+          "2026-09-25",
+          "referral",
+          "63",
+          "61",
+          "17"
+        ],
+        [
+          "2026-09-25",
+          "social",
+          "85",
+          "74",
+          "22"
+        ],
+        [
+          "2026-09-26",
+          "organic",
+          "157",
+          "147",
+          "49"
+        ],
+        [
+          "2026-09-26",
+          "paid_search",
+          "84",
+          "77",
+          "32"
+        ],
+        [
+          "2026-09-26",
+          "referral",
+          "54",
+          "50",
+          "21"
+        ],
+        [
+          "2026-09-26",
+          "social",
+          "86",
+          "79",
+          "35"
+        ],
+        [
+          "2026-09-27",
+          "organic",
+          "163",
+          "152",
+          "53"
+        ],
+        [
+          "2026-09-27",
+          "paid_search",
+          "88",
+          "80",
+          "34"
+        ],
+        [
+          "2026-09-27",
+          "referral",
+          "58",
+          "54",
+          "29"
+        ],
+        [
+          "2026-09-27",
+          "social",
+          "91",
+          "85",
+          "28"
+        ],
+        [
+          "2026-09-28",
+          "organic",
+          "163",
+          "154",
+          "57"
+        ],
+        [
+          "2026-09-28",
+          "paid_search",
+          "114",
+          "101",
+          "42"
+        ],
+        [
+          "2026-09-28",
+          "referral",
+          "51",
+          "50",
+          "16"
+        ],
+        [
+          "2026-09-28",
+          "social",
+          "87",
+          "79",
+          "30"
+        ],
+        [
+          "2026-09-29",
+          "organic",
+          "141",
+          "132",
+          "33"
+        ],
+        [
+          "2026-09-29",
+          "paid_search",
+          "96",
+          "82",
+          "25"
+        ],
+        [
+          "2026-09-29",
+          "referral",
+          "62",
+          "60",
+          "22"
+        ],
+        [
+          "2026-09-29",
+          "social",
+          "93",
+          "82",
+          "30"
+        ],
+        [
+          "2026-09-30",
+          "organic",
+          "160",
+          "150",
+          "58"
+        ],
+        [
+          "2026-09-30",
+          "paid_search",
+          "103",
+          "89",
+          "34"
+        ],
+        [
+          "2026-09-30",
+          "referral",
+          "64",
+          "61",
+          "21"
+        ],
+        [
+          "2026-09-30",
+          "social",
+          "81",
+          "75",
+          "24"
+        ],
+        [
+          "2026-10-01",
+          "organic",
+          "182",
+          "160",
+          "61"
+        ],
+        [
+          "2026-10-01",
+          "paid_search",
+          "99",
+          "86",
+          "27"
+        ],
+        [
+          "2026-10-01",
+          "referral",
+          "67",
+          "66",
+          "18"
+        ],
+        [
+          "2026-10-01",
+          "social",
+          "82",
+          "73",
+          "30"
+        ],
+        [
+          "2026-10-02",
+          "organic",
+          "186",
+          "172",
+          "61"
+        ],
+        [
+          "2026-10-02",
+          "paid_search",
+          "108",
+          "96",
+          "32"
+        ],
+        [
+          "2026-10-02",
+          "referral",
+          "86",
+          "76",
+          "22"
+        ],
+        [
+          "2026-10-02",
+          "social",
+          "87",
+          "79",
+          "25"
+        ],
+        [
+          "2026-10-03",
+          "organic",
+          "184",
+          "164",
+          "53"
+        ],
+        [
+          "2026-10-03",
+          "paid_search",
+          "104",
+          "98",
+          "46"
+        ],
+        [
+          "2026-10-03",
+          "referral",
+          "71",
+          "64",
+          "31"
+        ],
+        [
+          "2026-10-03",
+          "social",
+          "94",
+          "80",
+          "33"
+        ],
+        [
+          "2026-10-04",
+          "organic",
+          "169",
+          "159",
+          "51"
+        ],
+        [
+          "2026-10-04",
+          "paid_search",
+          "107",
+          "94",
+          "35"
+        ],
+        [
+          "2026-10-04",
+          "referral",
+          "68",
+          "64",
+          "23"
+        ],
+        [
+          "2026-10-04",
+          "social",
+          "96",
+          "83",
+          "34"
+        ],
+        [
+          "2026-10-05",
+          "organic",
+          "183",
+          "167",
+          "64"
+        ],
+        [
+          "2026-10-05",
+          "paid_search",
+          "104",
+          "90",
+          "29"
+        ],
+        [
+          "2026-10-05",
+          "referral",
+          "54",
+          "51",
+          "12"
+        ],
+        [
+          "2026-10-05",
+          "social",
+          "105",
+          "81",
+          "33"
+        ],
+        [
+          "2026-10-06",
+          "organic",
+          "187",
+          "172",
+          "60"
+        ],
+        [
+          "2026-10-06",
+          "paid_search",
+          "112",
+          "99",
+          "30"
+        ],
+        [
+          "2026-10-06",
+          "referral",
+          "58",
+          "52",
+          "28"
+        ],
+        [
+          "2026-10-06",
+          "social",
+          "103",
+          "92",
+          "36"
+        ],
+        [
+          "2026-10-07",
+          "organic",
+          "169",
+          "158",
+          "61"
+        ],
+        [
+          "2026-10-07",
+          "paid_search",
+          "103",
+          "91",
+          "37"
+        ],
+        [
+          "2026-10-07",
+          "referral",
+          "69",
+          "63",
+          "16"
+        ],
+        [
+          "2026-10-07",
+          "social",
+          "83",
+          "74",
+          "23"
+        ],
+        [
+          "2026-10-08",
+          "organic",
+          "187",
+          "167",
+          "73"
+        ],
+        [
+          "2026-10-08",
+          "paid_search",
+          "111",
+          "95",
+          "39"
+        ],
+        [
+          "2026-10-08",
+          "referral",
+          "76",
+          "72",
+          "26"
+        ],
+        [
+          "2026-10-08",
+          "social",
+          "78",
+          "71",
+          "24"
+        ],
+        [
+          "2026-10-09",
+          "organic",
+          "158",
+          "146",
+          "64"
+        ],
+        [
+          "2026-10-09",
+          "paid_search",
+          "118",
+          "109",
+          "38"
+        ],
+        [
+          "2026-10-09",
+          "referral",
+          "68",
+          "66",
+          "23"
+        ],
+        [
+          "2026-10-09",
+          "social",
+          "58",
+          "54",
+          "21"
+        ],
+        [
+          "2026-10-10",
+          "organic",
+          "171",
+          "156",
+          "61"
+        ],
+        [
+          "2026-10-10",
+          "paid_search",
+          "126",
+          "110",
+          "37"
+        ],
+        [
+          "2026-10-10",
+          "referral",
+          "66",
+          "58",
+          "18"
+        ],
+        [
+          "2026-10-10",
+          "social",
+          "83",
+          "73",
+          "22"
+        ],
+        [
+          "2026-10-11",
+          "organic",
+          "104",
+          "98",
+          "41"
+        ],
+        [
+          "2026-10-11",
+          "paid_search",
+          "64",
+          "62",
+          "25"
+        ],
+        [
+          "2026-10-11",
+          "referral",
+          "31",
+          "30",
+          "5"
+        ],
+        [
+          "2026-10-11",
+          "social",
+          "40",
+          "36",
+          "16"
+        ]
+      ]
+    }
+  }
+}

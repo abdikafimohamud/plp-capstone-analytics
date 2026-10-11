@@ -1,0 +1,29 @@
+-- Q2  Rolling 7-day / 30-day retention by weekly cohort
+-- file: queries/q2_retention_rollup.sql   tenant_id=1   median of 5 runs: 80.028 ms
+
+GroupAggregate  (cost=7444.39..9682.06 rows=24863 width=108) (actual time=49.653..72.535 rows=13 loops=1)
+  Group Key: ((date_trunc('week'::text, (u.signup_at AT TIME ZONE 'UTC'::text)))::date)
+  Buffers: shared hit=1933
+  ->  Sort  (cost=7444.39..7506.54 rows=24863 width=20) (actual time=49.143..52.253 rows=25000 loops=1)
+        Sort Key: ((date_trunc('week'::text, (u.signup_at AT TIME ZONE 'UTC'::text)))::date)
+        Sort Method: quicksort  Memory: 1940kB
+        Buffers: shared hit=1933
+        ->  Hash Right Join  (cost=2656.68..5629.17 rows=24863 width=20) (actual time=15.437..41.536 rows=25000 loops=1)
+              Hash Cond: (ua.user_id = u.user_id)
+              Buffers: shared hit=1933
+              ->  Seq Scan on agg_user_activity ua  (cost=0.00..2721.00 rows=24770 width=20) (actual time=0.629..10.087 rows=25000 loops=1)
+                    Filter: (tenant_id = 1)
+                    Rows Removed by Filter: 75000
+                    Buffers: shared hit=1471
+              ->  Hash  (cost=2345.89..2345.89 rows=24863 width=20) (actual time=14.778..14.780 rows=25000 loops=1)
+                    Buckets: 32768  Batches: 1  Memory Usage: 1624kB
+                    Buffers: shared hit=462
+                    ->  Bitmap Heap Scan on end_users u  (cost=581.11..2345.89 rows=24863 width=20) (actual time=1.262..8.018 rows=25000 loops=1)
+                          Recheck Cond: (tenant_id = 1)
+                          Heap Blocks: exact=364
+                          Buffers: shared hit=462
+                          ->  Bitmap Index Scan on end_users_pkey  (cost=0.00..574.89 rows=24863 width=0) (actual time=1.213..1.214 rows=25000 loops=1)
+                                Index Cond: (tenant_id = 1)
+                                Buffers: shared hit=98
+Planning Time: 0.222 ms
+Execution Time: 72.907 ms

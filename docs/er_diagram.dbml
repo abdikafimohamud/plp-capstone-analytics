@@ -1,0 +1,222 @@
+// Track C - Real-Time Analytics Platform  |  ER diagram (matches migrations V1-V7)
+// Paste into https://dbdiagram.io  (Import > DBML) to render.
+//
+// Solid foreign keys in the database are marked "FK"; relationships that exist in the data
+// model but are deliberately NOT enforced (for ingest speed) are marked "logical".
+
+Project capstone_analytics {
+  database_type: 'PostgreSQL'
+  Note: 'Multi-tenant event analytics. events is RANGE-partitioned by month. RLS on all tenant tables.'
+}
+
+// ------------------------------------------------------------------ dimensions
+Table plans {
+  plan_id smallint [pk]
+  name varchar(50) [not null, unique]
+  monthly_price_cents int [not null, note: '>= 0']
+  Note: 'Global reference data: 1 free, 2 starter, 3 pro, 4 business. Audited.'
+}
+
+Table tenants {
+  tenant_id int [pk, increment]
+  name varchar(120) [not null]
+  plan_id smallint [not null, ref: > plans.plan_id]
+  created_at timestamptz [not null, default: `now()`]
+  Note: 'One row per customer (SaaS account). RLS + audit trigger.'
+}
+
+Table end_users {
+  tenant_id int [not null, ref: > tenants.tenant_id]
+  user_id bigint [not null, note: 'from sequence end_users_user_id_seq']
+  external_id varchar(120) [not null, note: "the tenant's own id for the user"]
+  email_hash bytea [note: 'HMAC-SHA256, never plaintext']
+  country_code char(2)
+  acquisition_channel varchar(30)
+  signup_at timestamptz [not null]
+
+  indexes {
+    (tenant_id, user_id) [pk]
+    (tenant_id, external_id) [unique]
+    (tenant_id, signup_at) [name: 'end_users_signup_idx']
+  }
+  Note: 'Composite PK: tenant_id first, so every lookup is tenant-scoped. RLS.'
+}
+
+Table event_types {
+  event_type_id smallint [pk]
+  name varchar(60) [not null, unique, note: 'signup, view_pricing, start_trial, purchase, login, page_view, feature_used, invite_sent']
+  category varchar(30) [not null, note: 'acquisition | activation | engagement | revenue']
+  Note: 'Global reference data.'
+}
+
+// ------------------------------------------------------------------ fact table
+Table events {
+  tenant_id int [not null, note: 'logical -> tenants (no FK)']
+  event_id bigint [not null, note: 'sequence events_event_id_seq']
+  user_id bigint [not null, note: 'logical -> end_users (no FK)']
+  event_type_id smallint [not null, ref: > event_types.event_type_id]
+  occurred_at timestamptz [not null, note: 'PARTITION KEY']
+  session_id uuid
+  properties jsonb [not null, default: `'{}'`, note: 'variable attributes (device, campaign, ...)']
+
+  indexes {
+    (tenant_id, occurred_at, event_id) [pk, note: 'PK must contain the partition key']
+    occurred_at [name: 'events_occurred_at_brin', note: 'BRIN, pages_per_range=32']
+    (tenant_id, event_type_id, occurred_at) [name: 'events_tenant_type_time_cov', note: 'btree, INCLUDE (user_id) = covering']
+    (tenant_id, user_id, occurred_at) [name: 'events_tenant_user_time']
+    (tenant_id, properties) [name: 'events_properties_gin', note: 'GIN jsonb_path_ops (btree_gin)']
+  }
+  Note: 'PARTITION BY RANGE (occurred_at), one partition per month + events_default safety net. Raw rows kept 90 days (V7). RLS.'
+}
+
+// logical (not enforced) relationships of events
+Ref logical_events_tenant: events.tenant_id > tenants.tenant_id
+Ref logical_events_user: events.(tenant_id, user_id) > end_users.(tenant_id, user_id)
+
+// ------------------------------------------------------------------ funnels
+Table funnels {
+  funnel_id int [pk, increment]
+  tenant_id int [not null, ref: > tenants.tenant_id]
+  name varchar(120) [not null]
+  window_hours int [not null, default: 168, note: '> 0']
+
+  indexes {
+    (tenant_id, name) [unique]
+  }
+  Note: 'A tenant-defined funnel. RLS.'
+}
+
+Table funnel_steps {
+  funnel_id int [not null, ref: > funnels.funnel_id, note: 'ON DELETE CASCADE']
+  step_order smallint [not null, note: '> 0']
+  event_type_id smallint [not null, ref: > event_types.event_type_id]
+
+  indexes {
+    (funnel_id, step_order) [pk]
+  }
+  Note: 'Ordered steps. RLS inherited through funnels.'
+}
+
+// ------------------------------------------------------------------ revenue
+Table subscriptions {
+  subscription_id bigint [pk, increment]
+  tenant_id int [not null]
+  user_id bigint [not null]
+  plan_id smallint [not null, ref: > plans.plan_id]
+  status varchar(20) [not null, note: 'trialing | active | past_due | canceled']
+  started_at timestamptz [not null]
+  ended_at timestamptz [note: 'NULL = still running; must be >= started_at']
+  Note: 'Composite FK (tenant_id, user_id) -> end_users. Audited. RLS.'
+}
+
+Ref fk_subscriptions_user: subscriptions.(tenant_id, user_id) > end_users.(tenant_id, user_id)
+
+Table payments {
+  payment_id bigint [pk, increment]
+  subscription_id bigint [not null, ref: > subscriptions.subscription_id]
+  tenant_id int [not null]
+  amount_cents bigint [not null, note: '> 0, minor units']
+  currency char(3) [not null, default: 'USD']
+  status varchar(20) [not null, note: 'succeeded | failed | refunded']
+  paid_at timestamptz [not null]
+
+  indexes {
+    (tenant_id, paid_at) [name: 'payments_tenant_paid_cov', note: 'INCLUDE (subscription_id, amount_cents, status)']
+    subscription_id [name: 'payments_subscription_idx']
+  }
+  Note: 'Audited. RLS.'
+}
+
+// ------------------------------------------------------------------ audit
+Table audit_log {
+  audit_id bigint [pk, increment]
+  tenant_id int [note: 'no FK: audit rows outlive tenants']
+  table_name varchar(63) [not null]
+  operation char(1) [not null, note: 'I | U | D']
+  row_pk text [not null]
+  old_row jsonb
+  new_row jsonb
+  changed_by varchar(63) [not null, default: `session_user`]
+  changed_at timestamptz [not null, default: `now()`]
+  Note: 'Written by trigger on tenants, plans, subscriptions, payments. Append-only (UPDATE/DELETE blocked). RLS.'
+}
+
+// ------------------------------------------------------------------ derived (V6)
+// Plain tables maintained by refresh_rollups(): they survive the 90-day raw-event retention.
+Table agg_user_activity {
+  tenant_id int [not null]
+  user_id bigint [not null]
+  first_event_at timestamptz [not null]
+  last_event_at timestamptz [not null]
+  indexes { (tenant_id, user_id) [pk] }
+  Note: 'DERIVED. One row per user: powers rolling 7/30-day retention. View: v_user_activity.'
+}
+
+Table agg_daily_active_users {
+  tenant_id int [not null]
+  day date [not null]
+  dau int [not null]
+  indexes { (tenant_id, day) [pk] }
+  Note: 'DERIVED. Daily active users. View: v_daily_active_users.'
+}
+
+Table agg_daily_events {
+  tenant_id int [not null]
+  day date [not null]
+  event_type_id smallint [not null]
+  events bigint [not null]
+  users bigint [not null]
+  indexes { (tenant_id, day, event_type_id) [pk] }
+  Note: 'DERIVED. Events per day and type. View: v_daily_events.'
+}
+
+Table mv_daily_revenue {
+  tenant_id int
+  day date
+  cohort_month date
+  plan_id smallint
+  payments bigint
+  succeeded_payments bigint
+  revenue_cents numeric
+  refunded_cents numeric
+  indexes { (tenant_id, day, cohort_month, plan_id) [unique, name: 'mv_daily_revenue_pk'] }
+  Note: 'DERIVED. MATERIALIZED VIEW (refreshed CONCURRENTLY). View: v_daily_revenue.'
+}
+
+Table rollup_state {
+  name text [pk]
+  watermark timestamptz [not null, note: 'events before this are already rolled up']
+  Note: 'Bookkeeping: retention only drops partitions the rollups already consumed.'
+}
+
+// derived tables hang off the same keys as their sources (logical)
+Ref: agg_user_activity.(tenant_id, user_id) - end_users.(tenant_id, user_id)
+Ref: agg_daily_events.event_type_id > event_types.event_type_id
+Ref: agg_daily_active_users.tenant_id > tenants.tenant_id
+Ref: mv_daily_revenue.tenant_id > tenants.tenant_id
+
+TableGroup reference_data {
+  plans
+  event_types
+}
+TableGroup tenant_data {
+  tenants
+  end_users
+  funnels
+  funnel_steps
+  subscriptions
+  payments
+}
+TableGroup fact {
+  events
+}
+TableGroup audit {
+  audit_log
+}
+TableGroup derived {
+  agg_user_activity
+  agg_daily_active_users
+  agg_daily_events
+  mv_daily_revenue
+  rollup_state
+}

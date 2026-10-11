@@ -1,0 +1,46 @@
+-- Q1  Funnel conversion (signup -> pricing -> trial -> purchase)
+-- file: queries/q1_funnel.sql   tenant_id=1   median of 5 runs: 61.677 ms
+
+Aggregate  (cost=5058.47..5058.54 rows=1 width=160) (actual time=81.357..81.364 rows=1 loops=1)
+  Buffers: shared hit=423
+  CTE f
+    ->  Seq Scan on funnels  (cost=0.00..1.15 rows=1 width=20) (actual time=0.035..0.041 rows=1 loops=1)
+          Filter: ((tenant_id = 1) AND ((name)::text = 'Signup to Purchase'::text))
+          Rows Removed by Filter: 9
+          Buffers: shared hit=1
+  ->  Nested Loop  (cost=3132.90..3812.12 rows=22640 width=48) (actual time=65.416..73.609 rows=11368 loops=1)
+        Buffers: shared hit=423
+        ->  CTE Scan on f  (cost=0.00..0.02 rows=1 width=16) (actual time=0.052..0.055 rows=1 loops=1)
+              Buffers: shared hit=1
+        ->  HashAggregate  (cost=3132.90..3359.30 rows=22640 width=40) (actual time=65.361..70.975 rows=11368 loops=1)
+              Group Key: e.user_id
+              Batches: 1  Memory Usage: 2065kB
+              Buffers: shared hit=422
+              ->  Merge Join  (cost=2.69..2623.50 rows=22640 width=18) (actual time=0.189..44.391 rows=20991 loops=1)
+                    Merge Cond: (fs.event_type_id = e.event_type_id)
+                    Buffers: shared hit=422
+                    ->  Nested Loop  (cost=0.14..13.65 rows=4 width=4) (actual time=0.013..0.114 rows=4 loops=1)
+                          Join Filter: (fs.funnel_id = f_1.funnel_id)
+                          Rows Removed by Join Filter: 36
+                          Buffers: shared hit=2
+                          ->  Index Scan using funnel_steps_event_type_ix on funnel_steps fs  (cost=0.14..12.74 rows=40 width=8) (actual time=0.009..0.045 rows=40 loops=1)
+                                Buffers: shared hit=2
+                          ->  CTE Scan on f f_1  (cost=0.00..0.02 rows=1 width=4) (actual time=0.000..0.001 rows=1 loops=40)
+                    ->  Materialize  (cost=2.55..123418.91 rows=1202098 width=18) (actual time=0.173..34.287 rows=20992 loops=1)
+                          Buffers: shared hit=420
+                          ->  Merge Append  (cost=2.55..120413.66 rows=1202098 width=18) (actual time=0.171..19.659 rows=20992 loops=1)
+                                Sort Key: e.event_type_id
+                                Buffers: shared hit=420
+                                Subplans Removed: 7
+                                ->  Index Only Scan using events_2026_09_tenant_id_event_type_id_occurred_at_user_id_idx on events_2026_09 e_1  (cost=0.44..44017.85 rows=753307 width=18) (actual time=0.147..10.603 rows=13133 loops=1)
+                                      Index Cond: ((tenant_id = 1) AND (occurred_at >= (now() - '30 days'::interval)) AND (occurred_at < now()))
+                                      Heap Fetches: 0
+                                      Buffers: shared hit=378
+                                ->  Index Only Scan using events_2026_10_tenant_id_event_type_id_occurred_at_user_id_idx on events_2026_10 e_2  (cost=0.43..18991.20 rows=448784 width=18) (actual time=0.023..4.292 rows=7860 loops=1)
+                                      Index Cond: ((tenant_id = 1) AND (occurred_at >= (now() - '30 days'::interval)) AND (occurred_at < now()))
+                                      Heap Fetches: 0
+                                      Buffers: shared hit=42
+Planning:
+  Buffers: shared hit=33
+Planning Time: 3.174 ms
+Execution Time: 82.786 ms

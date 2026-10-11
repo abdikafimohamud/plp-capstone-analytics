@@ -1,0 +1,148 @@
+# Track C - Real-Time Analytics Platform: the whole stack on one machine.
+#
+#   cp .env.example .env            # then change the passwords
+#   docker compose up -d            # postgres, replica, redis, exporters, prometheus, grafana
+#   docker compose run --rm flyway clean migrate     # build the schema from nothing
+#
+# Ports: postgres 5432 | replica 5433 | redis 6379 | prometheus 9090 | grafana 3000
+services:
+  postgres:                                   # PRIMARY: all writes
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MONITOR_PASSWORD: ${MONITOR_PASSWORD}
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=5
+      - -c
+      - max_replication_slots=5
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=3GB
+      - -c
+      - work_mem=64MB
+      - -c
+      - maintenance_work_mem=512MB
+      - -c
+      - max_wal_size=8GB
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - track_io_timing=on
+      - -c
+      - password_encryption=scram-sha-256
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+      - .:/work:ro                            # lets scripts/psql.sh run files inside the container
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  replica:                                    # STREAMING REPLICA: dashboard reads (read scaling + hot standby)
+    image: postgres:16
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+    entrypoint: ["/bin/bash", "/replica-entrypoint.sh"]
+    ports: ["5433:5432"]
+    volumes:
+      - replicadata:/var/lib/postgresql/data
+      - ./docker/replica-entrypoint.sh:/replica-entrypoint.sh:ro
+
+  redis:                                      # INGESTION BUFFER (Redis Streams)
+    image: redis:7
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec",
+              "--maxmemory", "1gb", "--maxmemory-policy", "noeviction"]
+    ports: ["6379:6379"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  flyway:                                     # run on demand: docker compose run --rm flyway clean migrate
+    image: flyway/flyway:10
+    profiles: ["tools"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/capstone
+      FLYWAY_USER: capstone_admin
+      FLYWAY_PASSWORD: ${ADMIN_PASSWORD}
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+      FLYWAY_CLEAN_DISABLED: "false"          # dev only! keep it true anywhere real data lives
+    volumes: ["./migrations:/flyway/sql:ro"]
+
+  consumer:                                   # Redis -> PostgreSQL writer (optional: or run ingest/consumer.py by hand)
+    build: ./ingest
+    profiles: ["app"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      PGHOST: postgres
+      INGEST_PASSWORD: ${INGEST_PASSWORD}
+      REDIS_URL: redis://redis:6379/0
+    command: ["python", "consumer.py"]
+
+  # ------------------------------------------------------------ monitoring
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      DATA_SOURCE_NAME: postgresql://monitor_svc:${MONITOR_PASSWORD}@postgres:5432/capstone?sslmode=disable
+      PG_EXPORTER_EXTEND_QUERY_PATH: /queries.yaml
+    volumes: ["./monitoring/queries.yaml:/queries.yaml:ro"]
+
+  postgres_exporter_replica:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    depends_on: [replica]
+    environment:
+      DATA_SOURCE_NAME: postgresql://monitor_svc:${MONITOR_PASSWORD}@replica:5432/capstone?sslmode=disable
+
+  redis_exporter:
+    image: oliver006/redis_exporter:v1.62.0
+    depends_on: [redis]
+    command: ["--redis.addr=redis://redis:6379", "--check-streams=events:ingest,events:dead"]
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    depends_on: [postgres_exporter, postgres_exporter_replica, redis_exporter]
+    ports: ["9090:9090"]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    depends_on: [prometheus]
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+
+volumes:
+  pgdata:
+  replicadata:
+  redisdata:
+  promdata:
+  grafanadata:

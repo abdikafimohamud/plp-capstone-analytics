@@ -1,0 +1,20 @@
+-- Q3  Daily active users with 7-day average and WoW change
+-- file: queries/q3_dau_rollup.sql   tenant_id=1   median of 5 runs: 0.503 ms
+
+WindowAgg  (cost=16.15..17.31 rows=31 width=44) (actual time=0.105..0.238 rows=31 loops=1)
+  Buffers: shared hit=3
+  ->  WindowAgg  (cost=16.15..16.69 rows=31 width=40) (actual time=0.087..0.168 rows=31 loops=1)
+        Buffers: shared hit=3
+        ->  Sort  (cost=16.15..16.22 rows=31 width=8) (actual time=0.070..0.076 rows=31 loops=1)
+              Sort Key: agg_daily_active_users.day
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=3
+              ->  Bitmap Heap Scan on agg_daily_active_users  (cost=4.60..15.38 rows=31 width=8) (actual time=0.039..0.050 rows=31 loops=1)
+                    Recheck Cond: ((tenant_id = 1) AND (day >= (((now() AT TIME ZONE 'UTC'::text))::date - 30)))
+                    Heap Blocks: exact=1
+                    Buffers: shared hit=3
+                    ->  Bitmap Index Scan on agg_daily_active_users_pkey  (cost=0.00..4.59 rows=31 width=0) (actual time=0.026..0.027 rows=31 loops=1)
+                          Index Cond: ((tenant_id = 1) AND (day >= (((now() AT TIME ZONE 'UTC'::text))::date - 30)))
+                          Buffers: shared hit=2
+Planning Time: 0.193 ms
+Execution Time: 0.309 ms

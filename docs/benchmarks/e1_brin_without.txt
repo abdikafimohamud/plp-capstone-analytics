@@ -1,0 +1,24 @@
+GroupAggregate  (cost=268514.90..272893.61 rows=8 width=18) (actual time=155.192..174.945 rows=8 loops=1)
+  Group Key: events.event_type_id
+  Buffers: shared hit=5431 read=24660
+  ->  Gather Merge  (cost=268514.90..272628.63 rows=35321 width=6) (actual time=155.062..170.150 rows=37249 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=5431 read=24660
+        ->  Sort  (cost=267514.88..267551.68 rows=14722 width=6) (actual time=148.599..149.805 rows=12416 loops=3)
+              Sort Key: events.event_type_id, events.tenant_id
+              Sort Method: quicksort  Memory: 832kB
+              Buffers: shared hit=5431 read=24660
+              Worker 0:  Sort Method: quicksort  Memory: 741kB
+              Worker 1:  Sort Method: quicksort  Memory: 745kB
+              ->  Parallel Append  (cost=0.00..266495.70 rows=14722 width=6) (actual time=91.221..144.037 rows=12416 loops=3)
+                    Buffers: shared hit=5341 read=24660
+                    Subplans Removed: 8
+                    ->  Parallel Seq Scan on events_2026_10 events_1  (cost=0.00..47156.30 rows=14714 width=6) (actual time=91.219..142.866 rows=12416 loops=3)
+                          Filter: ((occurred_at < now()) AND (occurred_at >= (now() - '06:00:00'::interval)))
+                          Rows Removed by Filter: 597550
+                          Buffers: shared hit=5341 read=24660
+Planning:
+  Buffers: shared hit=15
+Planning Time: 0.523 ms
+Execution Time: 174.994 ms

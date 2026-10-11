@@ -1,0 +1,42 @@
+-- Q4  Revenue by signup cohort and plan (last 90 days)
+-- file: queries/q4_revenue_raw.sql   tenant_id=1   median of 5 runs: 41.385 ms
+
+GroupAggregate  (cost=4491.00..4722.54 rows=3859 width=114) (actual time=39.840..40.812 rows=12 loops=1)
+  Group Key: ((date_trunc('month'::text, (u.signup_at AT TIME ZONE 'UTC'::text)))::date), pl.name
+  Buffers: shared hit=1707
+  ->  Sort  (cost=4491.00..4500.64 rows=3859 width=28) (actual time=39.799..39.996 rows=3859 loops=1)
+        Sort Key: ((date_trunc('month'::text, (u.signup_at AT TIME ZONE 'UTC'::text)))::date), pl.name
+        Sort Method: quicksort  Memory: 328kB
+        Buffers: shared hit=1707
+        ->  Hash Join  (cost=1001.74..4261.12 rows=3859 width=28) (actual time=9.692..38.522 rows=3859 loops=1)
+              Hash Cond: (s.plan_id = pl.plan_id)
+              Buffers: shared hit=1707
+              ->  Hash Join  (cost=1000.65..4210.22 rows=3859 width=28) (actual time=9.659..36.448 rows=3859 loops=1)
+                    Hash Cond: ((u.tenant_id = s.tenant_id) AND (u.user_id = s.user_id))
+                    Buffers: shared hit=1706
+                    ->  Seq Scan on end_users u  (cost=0.00..2454.00 rows=100000 width=20) (actual time=0.005..8.618 rows=100000 loops=1)
+                          Buffers: shared hit=1454
+                    ->  Hash  (cost=942.76..942.76 rows=3859 width=32) (actual time=9.640..9.642 rows=3859 loops=1)
+                          Buckets: 4096  Batches: 1  Memory Usage: 281kB
+                          Buffers: shared hit=252
+                          ->  Hash Join  (cost=308.47..942.76 rows=3859 width=32) (actual time=4.144..8.483 rows=3859 loops=1)
+                                Hash Cond: (p.subscription_id = s.subscription_id)
+                                Buffers: shared hit=252
+                                ->  Seq Scan on payments p  (cost=0.00..624.16 rows=3859 width=26) (actual time=0.010..3.044 rows=3859 loops=1)
+                                      Filter: ((tenant_id = 1) AND (paid_at >= (((((now() AT TIME ZONE 'UTC'::text))::date - 90))::timestamp without time zone AT TIME ZONE 'UTC'::text)))
+                                      Rows Removed by Filter: 11613
+                                      Buffers: shared hit=160
+                                ->  Hash  (cost=188.21..188.21 rows=9621 width=22) (actual time=4.115..4.116 rows=9621 loops=1)
+                                      Buckets: 16384  Batches: 1  Memory Usage: 673kB
+                                      Buffers: shared hit=92
+                                      ->  Seq Scan on subscriptions s  (cost=0.00..188.21 rows=9621 width=22) (actual time=0.004..1.760 rows=9621 loops=1)
+                                            Buffers: shared hit=92
+              ->  Hash  (cost=1.04..1.04 rows=4 width=8) (actual time=0.022..0.023 rows=4 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on plans pl  (cost=0.00..1.04 rows=4 width=8) (actual time=0.015..0.017 rows=4 loops=1)
+                          Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=16
+Planning Time: 1.329 ms
+Execution Time: 40.907 ms

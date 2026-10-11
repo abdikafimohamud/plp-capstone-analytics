@@ -1,0 +1,41 @@
+-- Q3  Daily active users with 7-day average and WoW change
+-- file: queries/q3_dau_raw.sql   tenant_id=1   median of 5 runs: 2128.543 ms
+
+WindowAgg  (cost=251628.84..462995.23 rows=1232698 width=52) (actual time=1512.936..2084.186 rows=31 loops=1)
+  Buffers: shared hit=76 read=81329, temp read=3908 written=3926
+  ->  WindowAgg  (cost=251628.84..438341.27 rows=1232698 width=44) (actual time=1496.415..2083.958 rows=31 loops=1)
+        Buffers: shared hit=76 read=81329, temp read=3908 written=3926
+        ->  GroupAggregate  (cost=251628.84..419850.80 rows=1232698 width=12) (actual time=1480.859..2083.521 rows=31 loops=1)
+              Group Key: (((events.occurred_at AT TIME ZONE 'UTC'::text))::date)
+              Buffers: shared hit=76 read=81329, temp read=3908 written=3926
+              ->  Gather Merge  (cost=251628.84..395196.84 rows=1232698 width=12) (actual time=1462.324..1910.822 rows=1225865 loops=1)
+                    Workers Planned: 2
+                    Workers Launched: 2
+                    Buffers: shared hit=76 read=81329, temp read=3908 written=3926
+                    ->  Sort  (cost=250628.81..251912.88 rows=513629 width=12) (actual time=1446.638..1518.059 rows=408622 loops=3)
+                          Sort Key: (((events.occurred_at AT TIME ZONE 'UTC'::text))::date), events.user_id
+                          Sort Method: external merge  Disk: 11744kB
+                          Buffers: shared hit=76 read=81329, temp read=3908 written=3926
+                          Worker 0:  Sort Method: external merge  Disk: 10504kB
+                          Worker 1:  Sort Method: external merge  Disk: 9016kB
+                          ->  Parallel Append  (cost=0.00..193132.16 rows=513629 width=12) (actual time=1.884..1067.690 rows=408622 loops=3)
+                                Buffers: shared hit=47 read=81322
+                                Subplans Removed: 7
+                                ->  Parallel Bitmap Heap Scan on events_2026_09 events_1  (cost=248.27..132911.74 rows=323960 width=12) (actual time=1.933..777.436 rows=257198 loops=3)
+                                      Recheck Cond: ((occurred_at >= (((((now() AT TIME ZONE 'UTC'::text))::date - 30))::timestamp without time zone AT TIME ZONE 'UTC'::text)) AND (occurred_at < now()))
+                                      Rows Removed by Index Recheck: 634
+                                      Filter: (tenant_id = 1)
+                                      Rows Removed by Filter: 785296
+                                      Heap Blocks: lossy=15063
+                                      Buffers: shared hit=47 read=51321
+                                      ->  Bitmap Index Scan on events_2026_09_occurred_at_idx  (cost=0.00..53.89 rows=3139604 width=0) (actual time=4.416..4.417 rows=513050 loops=1)
+                                            Index Cond: ((occurred_at >= (((((now() AT TIME ZONE 'UTC'::text))::date - 30))::timestamp without time zone AT TIME ZONE 'UTC'::text)) AND (occurred_at < now()))
+                                            Buffers: shared hit=47 read=16
+                                ->  Parallel Seq Scan on events_2026_10 events_2  (cost=0.00..57635.34 rows=189662 width=12) (actual time=0.038..356.590 rows=227136 loops=2)
+                                      Filter: ((tenant_id = 1) AND (occurred_at < now()) AND (occurred_at >= (((((now() AT TIME ZONE 'UTC'::text))::date - 30))::timestamp without time zone AT TIME ZONE 'UTC'::text)))
+                                      Rows Removed by Filter: 687814
+                                      Buffers: shared read=30001
+Planning:
+  Buffers: shared hit=1 read=13
+Planning Time: 1.039 ms
+Execution Time: 2086.823 ms

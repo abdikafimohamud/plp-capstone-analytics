@@ -1,0 +1,60 @@
+-- Q1  Funnel conversion (signup -> pricing -> trial -> purchase)
+-- file: queries/q1_funnel.sql   tenant_id=1   median of 5 runs: 1107.617 ms
+
+Aggregate  (cost=202676.63..202676.70 rows=1 width=160) (actual time=1213.359..1213.806 rows=1 loops=1)
+  Buffers: shared hit=85 read=80114
+  CTE f
+    ->  Seq Scan on funnels  (cost=0.00..1.15 rows=1 width=20) (actual time=0.018..0.021 rows=1 loops=1)
+          Filter: ((tenant_id = 1) AND ((name)::text = 'Signup to Purchase'::text))
+          Rows Removed by Filter: 9
+          Buffers: shared read=1
+  ->  Nested Loop  (cost=200267.78..201471.64 rows=21888 width=48) (actual time=1196.716..1210.115 rows=11371 loops=1)
+        Buffers: shared hit=85 read=80114
+        ->  CTE Scan on f  (cost=0.00..0.02 rows=1 width=16) (actual time=0.020..0.022 rows=1 loops=1)
+              Buffers: shared read=1
+        ->  GroupAggregate  (cost=200267.78..201033.86 rows=21888 width=40) (actual time=1196.691..1208.496 rows=11371 loops=1)
+              Group Key: e.user_id
+              Buffers: shared hit=85 read=80113
+              ->  Sort  (cost=200267.78..200322.50 rows=21888 width=18) (actual time=1196.674..1199.643 rows=20995 loops=1)
+                    Sort Key: e.user_id
+                    Sort Method: quicksort  Memory: 1753kB
+                    Buffers: shared hit=85 read=80113
+                    ->  Hash Join  (cost=1001.93..198689.89 rows=21888 width=18) (actual time=0.880..1180.051 rows=20995 loops=1)
+                          Hash Cond: (fs.funnel_id = f_1.funnel_id)
+                          Buffers: shared hit=85 read=80113
+                          ->  Gather  (cost=1001.90..197650.17 rows=218880 width=22) (actual time=0.854..1122.486 rows=209950 loops=1)
+                                Workers Planned: 2
+                                Workers Launched: 2
+                                Buffers: shared hit=85 read=80113
+                                ->  Hash Join  (cost=1.90..174762.17 rows=91200 width=22) (actual time=1.572..1125.995 rows=69983 loops=3)
+                                      Hash Cond: (e.event_type_id = fs.event_type_id)
+                                      Buffers: shared hit=85 read=80113
+                                      ->  Parallel Append  (cost=0.00..166262.24 rows=505735 width=18) (actual time=1.327..1041.353 rows=402443 loops=3)
+                                            Buffers: shared hit=47 read=80106
+                                            Subplans Removed: 7
+                                            ->  Parallel Bitmap Heap Scan on events_2026_09 e_1  (cost=243.21..114654.23 rows=316066 width=18) (actual time=1.376..773.699 rows=251019 loops=3)
+                                                  Recheck Cond: ((occurred_at >= (now() - '30 days'::interval)) AND (occurred_at < now()))
+                                                  Rows Removed by Index Recheck: 83
+                                                  Filter: (tenant_id = 1)
+                                                  Rows Removed by Filter: 767301
+                                                  Heap Blocks: lossy=13459
+                                                  Buffers: shared hit=47 read=50105
+                                                  ->  Bitmap Index Scan on events_2026_09_occurred_at_idx  (cost=0.00..53.57 rows=3063504 width=0) (actual time=3.690..3.690 rows=500890 loops=1)
+                                                        Index Cond: ((occurred_at >= (now() - '30 days'::interval)) AND (occurred_at < now()))
+                                                        Buffers: shared hit=47 read=16
+                                            ->  Parallel Seq Scan on events_2026_10 e_2  (cost=0.00..49062.45 rows=189662 width=18) (actual time=0.040..308.917 rows=227136 loops=2)
+                                                  Filter: ((tenant_id = 1) AND (occurred_at < now()) AND (occurred_at >= (now() - '30 days'::interval)))
+                                                  Rows Removed by Filter: 687814
+                                                  Buffers: shared read=30001
+                                      ->  Hash  (cost=1.40..1.40 rows=40 width=8) (actual time=0.064..0.065 rows=40 loops=3)
+                                            Buckets: 1024  Batches: 1  Memory Usage: 10kB
+                                            Buffers: shared hit=2 read=1
+                                            ->  Seq Scan on funnel_steps fs  (cost=0.00..1.40 rows=40 width=8) (actual time=0.026..0.038 rows=40 loops=3)
+                                                  Buffers: shared hit=2 read=1
+                          ->  Hash  (cost=0.02..0.02 rows=1 width=4) (actual time=0.005..0.007 rows=1 loops=1)
+                                Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                ->  CTE Scan on f f_1  (cost=0.00..0.02 rows=1 width=4) (actual time=0.001..0.004 rows=1 loops=1)
+Planning:
+  Buffers: shared hit=1 read=13
+Planning Time: 1.543 ms
+Execution Time: 1214.313 ms

@@ -1,0 +1,31 @@
+# Custom postgres_exporter queries: the metrics that matter for THIS design.
+# Metric name = <query name>_<column name>.
+
+pg_events_partition:                # size of every monthly partition -> retention / growth planning
+  query: "SELECT c.relname AS partition, pg_total_relation_size(c.oid) AS bytes FROM pg_inherits i JOIN pg_class c ON c.oid = i.inhrelid WHERE i.inhparent = 'events'::regclass"
+  metrics:
+    - partition: { usage: "LABEL", description: "partition table name" }
+    - bytes:     { usage: "GAUGE", description: "total size incl. indexes" }
+
+pg_events_default:                  # must stay 0: rows here mean a partition is missing
+  query: "SELECT coalesce(max(n_live_tup), 0)::float8 AS rows FROM pg_stat_user_tables WHERE relname = 'events_default'"
+  metrics:
+    - rows: { usage: "GAUGE", description: "rows in the default partition (should be 0)" }
+
+pg_rollup:                          # freshness of the pre-aggregates the dashboards read
+  query: "SELECT coalesce((SELECT extract(epoch FROM now() - watermark) FROM rollup_state WHERE name = 'events_rollups'), 1e9)::float8 AS lag_seconds"
+  metrics:
+    - lag_seconds: { usage: "GAUGE", description: "seconds since the rollups were last refreshed" }
+
+pg_replication_lag:                 # primary's view of each standby
+  query: "SELECT application_name, coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), 0)::float8 AS lag_bytes, coalesce(extract(epoch FROM replay_lag), 0)::float8 AS replay_seconds FROM pg_stat_replication"
+  master: true
+  metrics:
+    - application_name: { usage: "LABEL", description: "standby name" }
+    - lag_bytes:        { usage: "GAUGE", description: "WAL bytes the standby has not replayed" }
+    - replay_seconds:   { usage: "GAUGE", description: "replay lag in seconds" }
+
+pg_events_estimate:                 # cheap row-count estimate (never count(*) a 10M-row table in a scrape)
+  query: "SELECT coalesce(sum(c.reltuples), 0)::float8 AS rows FROM pg_inherits i JOIN pg_class c ON c.oid = i.inhrelid WHERE i.inhparent = 'events'::regclass"
+  metrics:
+    - rows: { usage: "GAUGE", description: "estimated rows in events (from statistics)" }

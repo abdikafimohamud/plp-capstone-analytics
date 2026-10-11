@@ -1,0 +1,69 @@
+-- Q2  Rolling 7-day / 30-day retention by weekly cohort
+-- file: queries/q2_retention_raw.sql   tenant_id=1   median of 5 runs: 1360.321 ms
+
+GroupAggregate  (cost=259247.34..261485.01 rows=24863 width=108) (actual time=1235.645..1260.442 rows=13 loops=1)
+  Group Key: ((date_trunc('week'::text, (u.signup_at AT TIME ZONE 'UTC'::text)))::date)
+  Buffers: shared hit=16047 read=153912
+  ->  Sort  (cost=259247.34..259309.50 rows=24863 width=20) (actual time=1235.094..1238.468 rows=25000 loops=1)
+        Sort Key: ((date_trunc('week'::text, (u.signup_at AT TIME ZONE 'UTC'::text)))::date)
+        Sort Method: quicksort  Memory: 1940kB
+        Buffers: shared hit=16047 read=153912
+        ->  Hash Right Join  (cost=255422.18..257432.13 rows=24863 width=20) (actual time=1206.694..1228.050 rows=25000 loops=1)
+              Hash Cond: (events.user_id = u.user_id)
+              Buffers: shared hit=16047 read=153912
+              ->  Finalize HashAggregate  (cost=252765.50..253571.45 rows=80595 width=16) (actual time=1193.305..1199.255 rows=25000 loops=1)
+                    Group Key: events.user_id
+                    Batches: 1  Memory Usage: 3345kB
+                    Buffers: shared hit=15585 read=153912
+                    ->  Gather  (cost=235034.60..251959.55 rows=161190 width=16) (actual time=1159.042..1171.322 rows=51302 loops=1)
+                          Workers Planned: 2
+                          Workers Launched: 2
+                          Buffers: shared hit=15585 read=153912
+                          ->  Partial HashAggregate  (cost=234034.60..234840.55 rows=80595 width=16) (actual time=1152.973..1157.498 rows=17101 loops=3)
+                                Group Key: events.user_id
+                                Batches: 1  Memory Usage: 2833kB
+                                Buffers: shared hit=15585 read=153912
+                                Worker 0:  Batches: 1  Memory Usage: 2833kB
+                                Worker 1:  Batches: 1  Memory Usage: 2577kB
+                                ->  Parallel Append  (cost=0.00..228689.38 rows=1069044 width=16) (actual time=0.258..825.520 rows=857581 loops=3)
+                                      Buffers: shared hit=15585 read=153912
+                                      ->  Seq Scan on events_2026_06 events_1  (cost=0.00..0.00 rows=1 width=16) (actual time=0.019..0.020 rows=0 loops=1)
+                                            Filter: (tenant_id = 1)
+                                      ->  Seq Scan on events_2026_11 events_6  (cost=0.00..0.00 rows=1 width=16) (actual time=0.012..0.013 rows=0 loops=1)
+                                            Filter: (tenant_id = 1)
+                                      ->  Seq Scan on events_2026_12 events_7  (cost=0.00..0.00 rows=1 width=16) (actual time=0.007..0.007 rows=0 loops=1)
+                                            Filter: (tenant_id = 1)
+                                      ->  Seq Scan on events_2027_01 events_8  (cost=0.00..0.00 rows=1 width=16) (actual time=0.007..0.007 rows=0 loops=1)
+                                            Filter: (tenant_id = 1)
+                                      ->  Seq Scan on events_default events_9  (cost=0.00..0.00 rows=1 width=16) (actual time=0.007..0.007 rows=0 loops=1)
+                                            Filter: (tenant_id = 1)
+                                      ->  Parallel Seq Scan on events_2026_09 events_4  (cost=0.00..97584.11 rows=466276 width=16) (actual time=0.044..292.084 rows=373381 loops=3)
+                                            Filter: (tenant_id = 1)
+                                            Rows Removed by Filter: 1132347
+                                            Buffers: shared hit=14945 read=59112
+                                      ->  Parallel Seq Scan on events_2026_08 events_3  (cost=0.00..69806.07 rows=331755 width=16) (actual time=0.035..353.195 rows=401183 loops=2)
+                                            Filter: (tenant_id = 1)
+                                            Rows Removed by Filter: 1214488
+                                            Buffers: shared hit=320 read=52656
+                                      ->  Parallel Seq Scan on events_2026_10 events_5  (cost=0.00..39531.72 rows=189700 width=16) (actual time=0.021..393.629 rows=454271 loops=1)
+                                            Filter: (tenant_id = 1)
+                                            Rows Removed by Filter: 1375628
+                                            Buffers: shared hit=160 read=29841
+                                      ->  Parallel Seq Scan on events_2026_07 events_2  (cost=0.00..16422.28 rows=81308 width=16) (actual time=0.605..184.828 rows=195964 loops=1)
+                                            Filter: (tenant_id = 1)
+                                            Rows Removed by Filter: 564217
+                                            Buffers: shared hit=160 read=12303
+              ->  Hash  (cost=2345.89..2345.89 rows=24863 width=16) (actual time=13.359..13.361 rows=25000 loops=1)
+                    Buckets: 32768  Batches: 1  Memory Usage: 1428kB
+                    Buffers: shared hit=462
+                    ->  Bitmap Heap Scan on end_users u  (cost=581.11..2345.89 rows=24863 width=16) (actual time=1.246..7.313 rows=25000 loops=1)
+                          Recheck Cond: (tenant_id = 1)
+                          Heap Blocks: exact=364
+                          Buffers: shared hit=462
+                          ->  Bitmap Index Scan on end_users_pkey  (cost=0.00..574.89 rows=24863 width=0) (actual time=1.185..1.185 rows=25000 loops=1)
+                                Index Cond: (tenant_id = 1)
+                                Buffers: shared hit=98
+Planning:
+  Buffers: shared hit=5
+Planning Time: 0.607 ms
+Execution Time: 1263.648 ms
